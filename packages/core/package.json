@@ -11,7 +11,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "dev": "vitest"
+    "dev": "vitest",
+    "test:e2e": "vitest run test/e2e --runInBand"
   },
   "dependencies": {
     "ethers": "^6.13.0",
