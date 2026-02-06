@@ -19,41 +19,51 @@ import {
 const RPC_URL = process.env.RPC_URL;
 const TX_HASH = process.env.TX_HASH;
 
-// 跳过：没有环境变量就不跑（CI/本地都更舒服）
-const canRun = Boolean(RPC_URL && TX_HASH);
-
 describe("E2E analyze tx", () => {
-  it.runIf(canRun)("analyzes a real tx and produces report JSON", async () => {
-    const cache = new Cache({ maxEntries: 2000, ttlMs: 10 * 60_000 });
-    const rpc = new RpcClient({ url: RPC_URL!, timeoutMs: 30_000, retry: { retries: 1, baseDelayMs: 300, jitterMs: 100 } });
-    const tracer = new DebugTracer(rpc, { flavor: "geth_callTracer", cache });
+  if (!RPC_URL || !TX_HASH) {
+    it.skip("Set RPC_URL and TX_HASH to run e2e (requires debug_traceTransaction support)", async () => {});
+    return;
+  }
 
-    const norm = await tracer.traceTransaction(TX_HASH!);
-    const trace = parseTraceToCallTree(norm);
+  it(
+    "analyzes a real tx and produces report JSON",
+    async () => {
+      const cache = new Cache({ maxEntries: 2000, ttlMs: 10 * 60_000 });
+      const rpc = new RpcClient({
+        url: RPC_URL,
+        timeoutMs: 60_000,
+        retry: { retries: 1, baseDelayMs: 300, jitterMs: 100 }
+      });
+      const tracer = new DebugTracer(rpc, { flavor: "geth_callTracer", cache });
 
-    expect(trace.flat.length).toBeGreaterThan(0);
+      const norm = await tracer.traceTransaction(TX_HASH);
+      const trace = parseTraceToCallTree(norm);
 
-    const transfers = extractTokenTransfersFromCallTree(trace.root);
-    const gas = profileGas(trace.root, (c) => (c.input ? c.input.slice(0, 10).toLowerCase() : undefined));
-    const graph = buildInteractionGraph(trace.root, (c) => (c.input ? c.input.slice(0, 10) : undefined));
+      expect(trace.flat.length).toBeGreaterThan(0);
 
-    const engine = new VulnEngine({
-      rules: [reentrancyRule, uncheckedCallRule, accessControlRule, dangerousDelegatecallRule]
-    });
-    const findings = engine.run(trace.root, trace.flat);
+      const transfers = extractTokenTransfersFromCallTree(trace.root);
+      const gas = profileGas(trace.root, (c) => (c.input ? c.input.slice(0, 10).toLowerCase() : undefined));
+      const graph = buildInteractionGraph(trace.root, (c) => (c.input ? c.input.slice(0, 10) : undefined));
 
-    const report = buildReport({
-      txHash: TX_HASH!,
-      trace,
-      gas,
-      tokenTransfers: transfers,
-      findings,
-      graph,
-      includeDebugTree: false
-    });
+      const engine = new VulnEngine({
+        rules: [reentrancyRule, uncheckedCallRule, accessControlRule, dangerousDelegatecallRule]
+      });
+      const findings = engine.run(trace.root, trace.flat);
 
-    const json = toJson(report);
-    expect(typeof json).toBe("string");
-    expect(json.includes('"txHash"')).toBe(true);
-  });
+      const report = buildReport({
+        txHash: TX_HASH,
+        trace,
+        gas,
+        tokenTransfers: transfers,
+        findings,
+        graph,
+        includeDebugTree: false
+      });
+
+      const json = toJson(report);
+      expect(typeof json).toBe("string");
+      expect(json.includes('"txHash"')).toBe(true);
+    },
+    120_000 // E2E 超时：debug_trace 很容易 > 5s
+  );
 });
