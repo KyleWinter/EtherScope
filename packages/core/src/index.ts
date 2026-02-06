@@ -47,3 +47,4 @@ export * from "./trends/aggregations.js";
 export * from "./report/types.js";
 export * from "./report/buildReport.js";
 export * from "./report/serializers.js";
+export * from "./report/explain.js";
