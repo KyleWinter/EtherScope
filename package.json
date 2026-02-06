@@ -1,0 +1,9 @@
+{
+  "name": "etherscope-monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "echo TODO dev",
+    "build": "echo TODO build",
+    "test": "echo TODO test"
+  }
+}
