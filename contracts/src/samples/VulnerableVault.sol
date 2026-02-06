@@ -25,7 +25,10 @@ contract VulnerableVault {
         (bool ok, ) = msg.sender.call{value: amount}("");
         require(ok, "transfer failed");
 
-        balances[msg.sender] -= amount;
+        // Use unchecked to demonstrate classic reentrancy (pre-0.8.0 behavior)
+        unchecked {
+            balances[msg.sender] -= amount;
+        }
     }
 
     /// @notice VULNERABLE: unchecked low-level call return value

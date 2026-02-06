@@ -1,0 +1,392 @@
+# ============================================
+# EtherScope Project - Comprehensive .gitignore
+# ============================================
+
+# ============================================
+# General
+# ============================================
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# IDE & Editor
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ============================================
+# Python (Backend)
+# ============================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+pipenv/
+
+# PyCharm
+.idea/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# ============================================
+# Node.js (Frontend)
+# ============================================
+
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Production build
+/build
+/dist
+
+# Testing
+/coverage
+
+# Misc
+.npm
+.eslintcache
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn
+.yarn-integrity
+yarn-error.log
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# React
+.cache/
+
+# ============================================
+# Solidity (Smart Contracts)
+# ============================================
+
+# Foundry
+contracts/cache/
+contracts/out/
+contracts/artifacts/
+contracts/broadcast/
+!contracts/broadcast
+contracts/broadcast/*/31337/
+contracts/broadcast/**/dry-run/
+
+# Hardhat (if used)
+cache/
+artifacts/
+
+# Coverage
+lcov.info
+coverage/
+coverage.json
+
+# TypeChain
+typechain/
+typechain-types/
+
+# Gas reports
+.gas-snapshot
+gas-report.txt
+
+# Solidity Flattened Files
+*-flattened.sol
+
+# Foundry libs (should use submodules or package manager)
+contracts/lib/
+!contracts/lib/.gitkeep
+
+# ============================================
+# Environment & Configuration
+# ============================================
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# Local configuration
+config.local.json
+config.local.yaml
+
+# Secrets
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+keystore/
+
+# ============================================
+# Database
+# ============================================
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# PostgreSQL
+*.dump
+
+# MongoDB
+*.bson
+
+# ============================================
+# Logs
+# ============================================
+
+# General logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# Python logs
+pip-log.txt
+
+# Application logs
+app.log
+error.log
+combined.log
+
+# ============================================
+# Temporary & Cache Files
+# ============================================
+
+# General temp
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Cache
+.cache/
+*.cache
+
+# Thumbnails
+.thumbnails/
+
+# ============================================
+# Documentation Build
+# ============================================
+
+# Sphinx documentation
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# MkDocs
+site/
+
+# ============================================
+# Deployment & CI/CD
+# ============================================
+
+# Docker
+.dockerignore
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Kubernetes
+*.kubeconfig
+
+# ============================================
+# Project-Specific
+# ============================================
+
+# EtherScope specific
+data/raw/
+data/processed/
+models/saved/
+experiments/
+*.joblib
+*.pkl
+*.pickle
+
+# Contract deployments (optional - you may want to track these)
+# Uncomment if you don't want to track deployment addresses
+# contracts/deployments/*.json
+# !contracts/deployments/.gitkeep
+
+# Analysis results
+results/
+output/
+reports/
+
+# Downloaded blockchain data
+blockchain_data/
+*.rlp
+
+# ============================================
+# Archives
+# ============================================
+
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# ============================================
+# Media (if not needed in repo)
+# ============================================
+
+# Images (uncomment if you don't track images)
+# *.jpg
+# *.jpeg
+# *.png
+# *.gif
+# *.bmp
+# *.svg
+
+# Videos
+*.mp4
+*.avi
+*.mov
+*.wmv
+
+# Audio
+*.mp3
+*.wav
+
+# ============================================
+# Optional: Large Files
+# ============================================
+
+# Machine learning models
+*.h5
+*.onnx
+*.pb
+
+# Large datasets
+*.csv
+*.parquet
+*.feather
+
+# ============================================
+# Keep These Directories
+# ============================================
+
+# Ensure certain directories exist but are empty
+!**/.gitkeep
+
+# ============================================
+# Custom Ignores (Add your specific files below)
+# ============================================
+
+# Add any project-specific files to ignore here
