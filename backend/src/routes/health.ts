@@ -1,5 +1,7 @@
-// Health Route
-export default async function health(req:any,res:any){
-  res.send({status:'ok'})
-}
+import type { Router } from "express";
 
+export function registerHealthRoutes(router: Router) {
+  router.get("/health", (_req, res) => {
+    res.json({ ok: true, ts: new Date().toISOString() });
+  });
+}

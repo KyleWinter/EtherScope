@@ -1,6 +1,7 @@
-import { TraceParseResult } from "../trace/types.js";
-import { TokenTransfer } from "../state/types.js";
-import { lookup4byteSignature } from "../decoder/signatureLookup.js";
+import type { TraceParseResult } from "../trace/types.js";
+import type { TokenTransfer } from "../state/types.js";
+import type { ReportExplanations } from "./types.js";
+import { SignatureLookup } from "../decoder/signatureLookup.js";
 
 /** 最小可读：截断地址 */
 function shortAddr(a?: string): string {
@@ -17,50 +18,12 @@ function selectorOfInput(input?: string): string | undefined {
   return s.slice(0, 10);
 }
 
-function safeSig(selector?: string): string | undefined {
-  if (!selector) return undefined;
-  try {
-    // 你们 signatureLookup 已经有测试了；这里做 best-effort
-    const sig = lookup4byteSignature(selector);
-    return sig ?? undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-export type CallExplain = {
-  callId: string;
-  type?: string;
-  from?: string;
-  to?: string;
-  selector?: string;
-  signature?: string; // e.g. transfer(address,uint256)
-};
-
-export type TransferExplain = {
-  token: string;
-  from: string;
-  to: string;
-  value: string; // bigint string
-  callId?: string;
-  call?: CallExplain;
-  human: string;
-};
-
-export type ReportExplanations = {
-  callsById: Record<string, CallExplain>;
-  transfers: TransferExplain[];
-};
-
 /**
- * 生成给报告用的“可读解释信息”：
- * - callId -> (to, selector, signature)
- * - 每条 TokenTransfer -> human string
+ * 纯同步版本：不做公网 signature lookup（适用于离线、测试、或不想被公网 API 卡住的场景）
  */
 export function buildExplanations(trace: TraceParseResult, transfers: TokenTransfer[]): ReportExplanations {
-  const callsById: Record<string, CallExplain> = {};
+  const callsById: ReportExplanations["callsById"] = {};
 
-  // 先把 callId -> call 信息建好
   for (const c of trace.flat) {
     const sel = selectorOfInput(c.input);
     callsById[c.id] = {
@@ -68,12 +31,12 @@ export function buildExplanations(trace: TraceParseResult, transfers: TokenTrans
       type: c.type,
       from: c.from,
       to: c.to,
-      selector: sel,
-      signature: safeSig(sel)
+      selector: sel
+      // signature 留空
     };
   }
 
-  const explainedTransfers: TransferExplain[] = transfers.map((t) => {
+  const explainedTransfers: ReportExplanations["transfers"] = transfers.map((t) => {
     const call = t.callId ? callsById[t.callId] : undefined;
 
     const token = t.token.toLowerCase();
@@ -98,4 +61,61 @@ export function buildExplanations(trace: TraceParseResult, transfers: TokenTrans
   });
 
   return { callsById, transfers: explainedTransfers };
+}
+
+/**
+ * 异步版本：把 selector -> signature 填上（通过 4byte/openchain）
+ * - 对 trace 中出现过的 selector 去重后查询
+ * - best-effort：网络失败不影响整体返回
+ */
+export async function buildExplanationsWithSignatures(
+  trace: TraceParseResult,
+  transfers: TokenTransfer[],
+  sigLookup: SignatureLookup
+): Promise<ReportExplanations> {
+  const base = buildExplanations(trace, transfers);
+
+  // 收集去重 selector
+  const selectors = new Set<string>();
+  for (const c of trace.flat) {
+    const sel = base.callsById[c.id]?.selector;
+    if (sel) selectors.add(sel);
+  }
+
+  // selector -> signature（只取第一条命中）
+  const sigMap = new Map<string, string>();
+
+  for (const sel of selectors) {
+    try {
+      const hits = await sigLookup.lookupFunction(sel); // ✅ 这里返回的是数组
+      const sig = hits[0]?.text;
+      if (sig) sigMap.set(sel, sig);
+    } catch {
+      // ignore network failures
+    }
+  }
+
+  // 回填 callsById.signature
+  for (const id of Object.keys(base.callsById)) {
+    const ce = base.callsById[id];
+    if (!ce.selector) continue;
+    const sig = sigMap.get(ce.selector);
+    if (sig) ce.signature = sig;
+  }
+
+  // 重新生成 human 字符串（因为 signature 变了）
+  const rebuiltTransfers: ReportExplanations["transfers"] = base.transfers.map((t) => {
+    const call = t.callId ? base.callsById[t.callId] : undefined;
+    const callPart = call
+      ? `${call.callId} ${shortAddr(call.to)} ${call.signature ?? call.selector ?? ""}`.trim()
+      : "unknown-call";
+
+    return {
+      ...t,
+      call,
+      human: `Transfer ${shortAddr(t.token)}: ${shortAddr(t.from)} -> ${shortAddr(t.to)} (${t.value}) @ ${callPart}`
+    };
+  });
+
+  return { callsById: base.callsById, transfers: rebuiltTransfers };
 }

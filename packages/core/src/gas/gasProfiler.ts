@@ -2,7 +2,7 @@ import { CallNode } from "../trace/types.js";
 import { GasProfile } from "./types.js";
 
 function sumBigint(xs: Array<bigint | undefined>): bigint {
-  return xs.reduce((a, b) => a + (b ?? 0n), 0n);
+  return xs.reduce<bigint>((acc, x) => acc + (x ?? 0n), 0n);
 }
 
 export function profileGas(
@@ -34,8 +34,9 @@ export function profileGas(
   const bySelectorMap = new Map<string, bigint>();
 
   for (const b of byCall) {
-    if (b.contract) byContractMap.set(b.contract, (byContractMap.get(b.contract) ?? 0n) + (b.gasUsed ?? 0n));
-    if (b.selector) bySelectorMap.set(b.selector, (bySelectorMap.get(b.selector) ?? 0n) + (b.gasUsed ?? 0n));
+    const g = b.gasUsed ?? 0n; // ✅ TS-safe
+    if (b.contract) byContractMap.set(b.contract, (byContractMap.get(b.contract) ?? 0n) + g);
+    if (b.selector) bySelectorMap.set(b.selector, (bySelectorMap.get(b.selector) ?? 0n) + g);
   }
 
   const byContract = [...byContractMap.entries()]

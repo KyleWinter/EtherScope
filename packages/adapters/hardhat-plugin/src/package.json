@@ -1,0 +1,25 @@
+{
+  "name": "@etherscope/hardhat-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --sourcemap --clean --outDir dist"
+  },
+  "dependencies": {
+    "@etherscope/core": "workspace:*",
+    "@etherscope/adapter-slither": "workspace:*",
+    "@etherscope/adapter-mythril": "workspace:*"
+  },
+  "peerDependencies": {
+    "hardhat": "^2.0.0"
+  }
+}

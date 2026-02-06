@@ -16,15 +16,20 @@ export class EventDecoder {
   }
 
   decodeLog(log: { address: string; topics: string[]; data: string }): DecodedLog {
-    const topic0 = (log.topics?.[0] ?? "0x").toLowerCase();
+    const topics = Array.isArray(log.topics) ? log.topics : [];
+    const topic0 = (topics[0] ?? "0x").toLowerCase();
+
     try {
-      const parsed: LogDescription = this.iface.parseLog({ topics: log.topics, data: log.data });
+      // ethers v6: parseLog 可能返回 LogDescription | null（也可能 throw）
+      const parsed: LogDescription | null = this.iface.parseLog({ topics, data: log.data });
+      if (!parsed) return { address: log.address, topic0 };
+
       return {
         address: log.address,
         topic0,
         name: parsed.name,
         signature: parsed.signature,
-        args: Array.from(parsed.args)
+        args: Array.from(parsed.args) as unknown[]
       };
     } catch {
       return { address: log.address, topic0 };

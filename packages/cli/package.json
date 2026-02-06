@@ -1,0 +1,25 @@
+{
+  "name": "@etherscope/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "etherscope": "./bin/etherscope"
+  },
+  "scripts": {
+    "dev": "node --enable-source-maps dist/index.js",
+    "build": "tsup src/index.ts --format esm --dts --sourcemap --clean --outDir dist",
+    "start": "node --enable-source-maps dist/index.js",
+    "lint": "echo \"(optional) add eslint\"",
+    "test": "echo \"cli tests later\""
+  },
+  "dependencies": {
+    "@etherscope/core": "workspace:*",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.3"
+  }
+}
