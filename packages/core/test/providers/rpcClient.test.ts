@@ -99,12 +99,15 @@ describe("RpcClient", () => {
   );
 
   it("retries on transient failure", async () => {
-    const srv = await startRpcServer((_body, reqCount) => {
+    const srv = await startRpcServer((body, reqCount) => {
       if (reqCount === 1) {
         // fail first request hard (server responds 500)
         throw new Error("boom");
       }
-      return [{ jsonrpc: "2.0", id: 1, result: "ok" }];
+
+      // 单请求：返回单个 JSON-RPC response object，并回显请求 id
+      const req = Array.isArray(body) ? body[0] : body;
+      return { jsonrpc: "2.0", id: req.id, result: "ok" };
     });
 
     try {

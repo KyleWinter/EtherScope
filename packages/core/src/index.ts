@@ -5,6 +5,8 @@ export * from "./providers/rpcClient.js";
 export * from "./providers/debugTrace.js";
 export * from "./providers/etherscanAbi.js";
 export * from "./providers/cache.js";
+export * from "./providers/receipt.js";
+
 
 export * from "./trace/types.js";
 export * from "./trace/traceParser.js";
@@ -47,3 +49,4 @@ export * from "./trends/aggregations.js";
 export * from "./report/types.js";
 export * from "./report/buildReport.js";
 export * from "./report/serializers.js";
+export * from "./report/explain.js";
