@@ -30,7 +30,6 @@ export * from "./state/tokenTransfers.js";
 export * from "./state/storageDiff.js";
 export * from "./state/storageDecodePresets.js";
 
-export * from "./vuln/types.js";
 export * from "./vuln/engine.js";
 export * from "./vuln/evidence.js";
 export * from "./vuln/rules/reentrancyRule.js";
@@ -50,3 +49,5 @@ export * from "./report/types.js";
 export * from "./report/buildReport.js";
 export * from "./report/serializers.js";
 export * from "./report/explain.js";
+
+export * from "./types/finding";

@@ -1,8 +1,11 @@
+// backend/src/jobs/analyzeJob.ts
+
 import type { Job } from "./queue";
 import { queue } from "./queueInstance";
 import { analyzeService } from "../services/analyzeService";
 import { jobRepo } from "./jobRepo";
 import { wsBus } from "../serverBus";
+import { txRepo } from "../db/repo/txRepo";
 
 export interface AnalyzeJobInput {
   txHash?: string;
@@ -13,29 +16,86 @@ export interface AnalyzeJobInput {
   timeoutMs?: number;
 }
 
+/* =============================
+   Enqueue
+============================= */
+
 export function enqueueAnalyze(input: AnalyzeJobInput) {
-  const job = queue.enqueue("analyze", input);
+  const normalized = inputNormalize(input);
+  const job = queue.enqueue("analyze", normalized);
+
+  // DB 记录 queued
   jobRepo.create(job);
+
   return job;
 }
+
+/* =============================
+   Worker Handler
+============================= */
 
 export function registerAnalyzeJobHandler() {
   queue.register<AnalyzeJobInput>("analyze", async (job: Job<AnalyzeJobInput>) => {
     jobRepo.markRunning(job.id);
 
-    wsBus.publish({ type: "job:update", jobId: job.id }, { status: "running" });
+    wsBus.publish(
+      { type: "job:update", jobId: job.id },
+      { status: "running" }
+    );
 
-    const { reportId } = await analyzeService.run(inputNormalize(job.input));
+    try {
+      const normalized = inputNormalize(job.input);
 
-    jobRepo.markSucceeded(job.id, { reportId });
-    wsBus.publish({ type: "job:done", jobId: job.id, reportId }, { status: "succeeded", reportId });
+      const { reportId } = await analyzeService.run(normalized);
+
+      /* ---------- DB ---------- */
+
+      jobRepo.markSucceeded(job.id, { reportId });
+
+      if (normalized.txHash) {
+        txRepo.upsertTxReport(normalized.txHash, reportId);
+      }
+
+      /* ---------- WS ---------- */
+
+      wsBus.publish(
+        { type: "job:done", jobId: job.id, reportId },
+        { status: "succeeded", reportId }
+      );
+
+    } catch (err: any) {
+      const msg =
+        typeof err?.message === "string"
+          ? err.message
+          : String(err);
+
+      jobRepo.markFailed(job.id, msg);
+
+      wsBus.publish(
+        { type: "job:done", jobId: job.id, error: msg },
+        { status: "failed", error: msg }
+      );
+
+      throw err; // 让 queue 记录 failed event
+    }
   });
+
+  /* =============================
+     Queue Failed Event
+     （只做日志 / WS，不再写 DB）
+  ============================= */
 
   queue.on("failed", (job: Job) => {
-    jobRepo.markFailed(job.id, job.error ?? "unknown error");
-    wsBus.publish({ type: "job:done", jobId: job.id, error: job.error }, { status: "failed", error: job.error });
+    wsBus.publish(
+      { type: "job:update", jobId: job.id },
+      { status: "failed", error: job.error }
+    );
   });
 }
+
+/* =============================
+   Normalize
+============================= */
 
 function inputNormalize(input: AnalyzeJobInput): AnalyzeJobInput {
   return {

@@ -1,7 +1,12 @@
 import express from "express";
 import http from "node:http";
+import path from "node:path";
 
 import { env } from "./config/env";
+
+// ✅ 让后端进程能找到 slither / mythril 等外部命令
+process.env.PATH = [...env.toolPathExtra, process.env.PATH ?? ""].join(path.delimiter);
+
 import { corsMiddleware } from "./config/cors";
 
 import { registerHealthRoutes } from "./routes/health";
