@@ -11,6 +11,8 @@ import type { EthTransaction } from "@/lib/types";
 export default function BlockExplorer({ initialBlockNumber }: { initialBlockNumber?: string }) {
   const [blockInput, setBlockInput] = useState("");
   const [selectedBlock, setSelectedBlock] = useState<string | null>(initialBlockNumber || null);
+  const [txPage, setTxPage] = useState(0);
+  const TX_PER_PAGE = 20;
 
   const { data: latestHex } = useLatestBlock();
   const latestNum = latestHex ? hexToNumber(latestHex) : null;
@@ -30,6 +32,7 @@ export default function BlockExplorer({ initialBlockNumber }: { initialBlockNumb
   function goToBlock(num: number) {
     setSelectedBlock(String(num));
     setBlockInput("");
+    setTxPage(0);
   }
 
   function handleGoTo(e: React.FormEvent) {
@@ -39,7 +42,9 @@ export default function BlockExplorer({ initialBlockNumber }: { initialBlockNumb
   }
 
   const transactions = block?.transactions as (EthTransaction | string)[] | undefined;
-  const txList = transactions?.slice(0, 50); // Show first 50 txs
+  const totalTxs = transactions?.length ?? 0;
+  const totalPages = Math.ceil(totalTxs / TX_PER_PAGE);
+  const txList = transactions?.slice(txPage * TX_PER_PAGE, (txPage + 1) * TX_PER_PAGE);
 
   return (
     <div className="space-y-4">
@@ -151,18 +156,61 @@ export default function BlockExplorer({ initialBlockNumber }: { initialBlockNumb
           </Card>
 
           {/* Transaction table */}
-          {txList && txList.length > 0 && (
+          {totalTxs > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">
-                  Transactions {block.transactions && block.transactions.length > 50 && `(showing first 50 of ${block.transactions.length})`}
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">
+                    Transactions ({totalTxs})
+                  </CardTitle>
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="inline-flex items-center justify-center rounded-md border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
+                        disabled={txPage === 0}
+                        onClick={() => setTxPage(0)}
+                      >
+                        First
+                      </button>
+                      <button
+                        className="inline-flex items-center justify-center rounded-md border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
+                        disabled={txPage === 0}
+                        onClick={() => setTxPage(p => p - 1)}
+                      >
+                        <ChevronLeft className="h-3 w-3" />
+                      </button>
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {txPage + 1} / {totalPages}
+                      </span>
+                      <button
+                        className="inline-flex items-center justify-center rounded-md border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
+                        disabled={txPage >= totalPages - 1}
+                        onClick={() => setTxPage(p => p + 1)}
+                      >
+                        <ChevronRight className="h-3 w-3" />
+                      </button>
+                      <button
+                        className="inline-flex items-center justify-center rounded-md border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
+                        disabled={txPage >= totalPages - 1}
+                        onClick={() => setTxPage(totalPages - 1)}
+                      >
+                        Last
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {totalPages > 1 && (
+                  <div className="text-xs text-muted-foreground">
+                    Showing {txPage * TX_PER_PAGE + 1}–{Math.min((txPage + 1) * TX_PER_PAGE, totalTxs)} of {totalTxs}
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b text-muted-foreground">
+                        <th className="text-left py-2 pr-3">#</th>
                         <th className="text-left py-2 pr-3">Tx Hash</th>
                         <th className="text-left py-2 pr-3">From</th>
                         <th className="text-left py-2 pr-3">To</th>
@@ -171,10 +219,12 @@ export default function BlockExplorer({ initialBlockNumber }: { initialBlockNumb
                       </tr>
                     </thead>
                     <tbody>
-                      {txList.map((txItem, i) => {
+                      {txList?.map((txItem, i) => {
+                        const rowNum = txPage * TX_PER_PAGE + i + 1;
                         if (typeof txItem === "string") {
                           return (
                             <tr key={i} className="border-b hover:bg-muted/50">
+                              <td className="py-2 pr-3 text-muted-foreground">{rowNum}</td>
                               <td colSpan={5} className="py-2">
                                 <button
                                   className="font-mono text-primary hover:underline"
@@ -192,6 +242,7 @@ export default function BlockExplorer({ initialBlockNumber }: { initialBlockNumb
                         const t = txItem as EthTransaction;
                         return (
                           <tr key={i} className="border-b hover:bg-muted/50">
+                            <td className="py-2 pr-3 text-muted-foreground">{rowNum}</td>
                             <td className="py-2 pr-3">
                               <button
                                 className="font-mono text-primary hover:underline"
@@ -213,6 +264,33 @@ export default function BlockExplorer({ initialBlockNumber }: { initialBlockNumb
                     </tbody>
                   </table>
                 </div>
+
+                {/* Bottom pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                    <div className="text-xs text-muted-foreground">
+                      {txPage * TX_PER_PAGE + 1}–{Math.min((txPage + 1) * TX_PER_PAGE, totalTxs)} of {totalTxs} transactions
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        className="inline-flex items-center justify-center rounded-md border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
+                        disabled={txPage === 0}
+                        onClick={() => setTxPage(p => p - 1)}
+                      >
+                        <ChevronLeft className="h-3 w-3 mr-1" />
+                        Prev
+                      </button>
+                      <button
+                        className="inline-flex items-center justify-center rounded-md border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
+                        disabled={txPage >= totalPages - 1}
+                        onClick={() => setTxPage(p => p + 1)}
+                      >
+                        Next
+                        <ChevronRight className="h-3 w-3 ml-1" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

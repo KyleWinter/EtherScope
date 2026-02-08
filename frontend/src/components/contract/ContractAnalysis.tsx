@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, ChevronDown, ChevronUp, ExternalLink, Clock } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, ExternalLink, Clock, Loader2, CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { useContractInfo } from "@/hooks/useEtherscan";
 import { useNavigateTab } from "@/hooks/useNavigateTab";
-import { formatEth, truncateAddress, hexToNumber } from "@/lib/utils";
+import { formatEth, truncateAddress } from "@/lib/utils";
 import { apiClient } from "@/lib/api/client";
 import { wsClient } from "@/lib/api/client";
 import { useQuery } from "@tanstack/react-query";
-import type { WsMessage } from "@/lib/types";
+import type { WsMessage, Finding } from "@/lib/types";
 
 interface AbiItem {
   type: string;
@@ -27,7 +27,9 @@ export default function ContractAnalysis({ initialAddress }: { initialAddress?: 
   const [showAbi, setShowAbi] = useState(false);
   const [showTxHistory, setShowTxHistory] = useState(false);
   const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
-  const [analysisJobId, setAnalysisJobId] = useState<string | null>(null);
+  const [analysisRunning, setAnalysisRunning] = useState(false);
+  const [analysisFindings, setAnalysisFindings] = useState<Finding[]>([]);
+  const [analysisReportId, setAnalysisReportId] = useState<string | null>(null);
 
   const { data: contract, isLoading, error } = useContractInfo(searchAddress);
   const nav = useNavigateTab();
@@ -63,35 +65,61 @@ export default function ContractAnalysis({ initialAddress }: { initialAddress?: 
     if (trimmed) {
       setSearchAddress(trimmed);
       setAnalysisStatus(null);
-      setAnalysisJobId(null);
     }
   }
 
   async function runSlither() {
     if (!contract?.sourceCode || !searchAddress) return;
-    setAnalysisStatus("Submitting analysis job...");
+
+    setAnalysisRunning(true);
+    setAnalysisStatus("Submitting source code for analysis...");
+    setAnalysisFindings([]);
+    setAnalysisReportId(null);
+
     try {
-      const res = await apiClient.analyze({
-        projectRoot: searchAddress,
-        tools: ["slither"],
-        mode: "local",
+      const res = await apiClient.analyzeSource({
+        sourceCode: contract.sourceCode,
+        contractName: contract.name || "Contract",
+        contractAddress: searchAddress,
       });
+
       if (res.ok && res.jobId) {
-        setAnalysisJobId(res.jobId);
-        setAnalysisStatus("Analysis running...");
-        const unsub = wsClient.subscribe(`job:${res.jobId}`, (msg: WsMessage) => {
+        setAnalysisStatus("Running Slither analysis...");
+
+        const unsub = wsClient.subscribe(`job:${res.jobId}`, async (msg: WsMessage) => {
           if (msg.type === "job:update") {
             setAnalysisStatus(msg.message);
           } else if (msg.type === "job:done") {
-            setAnalysisStatus(msg.error ? `Error: ${msg.error}` : "Analysis complete!");
             unsub();
+            if (msg.error) {
+              setAnalysisStatus(`Error: ${msg.error}`);
+              setAnalysisRunning(false);
+            } else if (msg.reportId) {
+              setAnalysisStatus("Fetching results...");
+              setAnalysisReportId(msg.reportId);
+              // Fetch the report to show findings inline
+              try {
+                const report = await apiClient.getReportById(msg.reportId);
+                if (report.ok && report.report) {
+                  setAnalysisFindings(report.report.findings || []);
+                  setAnalysisStatus(`Analysis complete! Found ${report.report.findings?.length || 0} issues.`);
+                } else {
+                  setAnalysisStatus("Analysis complete! Check Findings tab for details.");
+                }
+              } catch {
+                setAnalysisStatus("Analysis complete! Check Findings tab for details.");
+              }
+              setAnalysisRunning(false);
+            }
           }
         });
       } else {
-        setAnalysisStatus(`Failed: ${res.error || "Unknown error"}`);
+        setAnalysisStatus(`Failed: ${JSON.stringify(res.error) || "Unknown error"}`);
+        setAnalysisRunning(false);
       }
     } catch (err: any) {
       setAnalysisStatus(`Error: ${err.message}`);
+      setAnalysisRunning(false);
     }
   }
 
@@ -401,16 +429,112 @@ export default function ContractAnalysis({ initialAddress }: { initialAddress?: 
               <CardHeader>
                 <CardTitle className="text-base">Static Analysis</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 <button
                   className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                   onClick={runSlither}
-                  disabled={!!analysisJobId}
+                  disabled={analysisRunning}
                 >
-                  Run Slither Analysis
+                  {analysisRunning ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    "Run Slither Analysis"
+                  )}
                 </button>
+
                 {analysisStatus && (
-                  <p className="text-sm text-muted-foreground">{analysisStatus}</p>
+                  <div className={`rounded-md p-3 text-sm flex items-center gap-2 ${
+                    analysisStatus.startsWith("Error") || analysisStatus.startsWith("Failed")
+                      ? "bg-destructive/10 text-destructive"
+                      : analysisStatus.includes("complete")
+                      ? "bg-green-500/10 text-green-700 dark:text-green-400"
+                      : "bg-primary/10 text-primary"
+                  }`}>
+                    {analysisRunning && <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />}
+                    {!analysisRunning && analysisStatus.includes("complete") && <CheckCircle2 className="h-4 w-4 flex-shrink-0" />}
+                    {!analysisRunning && (analysisStatus.startsWith("Error") || analysisStatus.startsWith("Failed")) && <XCircle className="h-4 w-4 flex-shrink-0" />}
+                    {analysisStatus}
+                  </div>
+                )}
+
+                {/* Inline Findings */}
+                {analysisFindings.length > 0 && (
+                  <div className="space-y-3">
+                    {/* Summary */}
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      {(["high", "medium", "low", "info"] as const).map(sev => {
+                        const count = analysisFindings.filter(f => f.severity === sev).length;
+                        const colors = {
+                          high: "bg-red-50 dark:bg-red-950/20 text-red-600 border-red-200 dark:border-red-800",
+                          medium: "bg-orange-50 dark:bg-orange-950/20 text-orange-600 border-orange-200 dark:border-orange-800",
+                          low: "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 border-yellow-200 dark:border-yellow-800",
+                          info: "bg-blue-50 dark:bg-blue-950/20 text-blue-600 border-blue-200 dark:border-blue-800",
+                        };
+                        return (
+                          <div key={sev} className={`rounded-md border p-2 ${colors[sev]}`}>
+                            <div className="text-lg font-bold">{count}</div>
+                            <div className="text-[10px] uppercase font-medium">{sev}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Finding list */}
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {analysisFindings.map((finding, idx) => {
+                        const sevIcon = {
+                          high: <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />,
+                          medium: <AlertTriangle className="h-4 w-4 text-orange-500 flex-shrink-0" />,
+                          low: <Info className="h-4 w-4 text-yellow-500 flex-shrink-0" />,
+                          info: <Info className="h-4 w-4 text-blue-500 flex-shrink-0" />,
+                        };
+                        const sevBadge = {
+                          high: "destructive" as const,
+                          medium: "warning" as const,
+                          low: "secondary" as const,
+                          info: "default" as const,
+                        };
+                        return (
+                          <div key={idx} className="border rounded-md p-3 text-sm space-y-1">
+                            <div className="flex items-start gap-2">
+                              {sevIcon[finding.severity]}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 justify-between">
+                                  <span className="font-medium truncate">{finding.title}</span>
+                                  <Badge variant={sevBadge[finding.severity]} className="text-[10px] flex-shrink-0">
+                                    {finding.severity.toUpperCase()}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">{finding.description}</p>
+                                {finding.location && (
+                                  <p className="text-[10px] font-mono text-muted-foreground mt-1">
+                                    {finding.location.file}{finding.location.line ? `:${finding.location.line}` : ""}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Link to full findings */}
+                    {analysisReportId && (
+                      <button
+                        className="w-full inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm hover:bg-accent"
+                        onClick={() => {
+                          nav.setReportId?.(analysisReportId);
+                          nav.setActiveTab("findings");
+                        }}
+                      >
+                        View Full Report in Findings Tab
+                        <ExternalLink className="ml-2 h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>

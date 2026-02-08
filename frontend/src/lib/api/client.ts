@@ -68,6 +68,13 @@ class ApiClient {
     return this.fetch(`/report/${reportId}`);
   }
 
+  async analyzeSource(request: { sourceCode: string; contractName?: string; contractAddress?: string }): Promise<AnalyzeResponse> {
+    return this.fetch("/analyze/source", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
   async getTrends(contract: string, limit = 200): Promise<TrendsResponse> {
     return this.fetch(`/trends?contract=${encodeURIComponent(contract)}&limit=${limit}`);
   }
