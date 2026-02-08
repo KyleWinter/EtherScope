@@ -9,6 +9,47 @@ function isTxHash(s: string): boolean {
 }
 
 export function registerTxRoutes(router: Router) {
+  // Get report by reportId directly
+  router.get("/report/:reportId", (req, res) => {
+    const reportId = String(req.params.reportId ?? "").trim();
+
+    if (!reportId) {
+      return res.status(400).json({ ok: false, error: "missing report ID" });
+    }
+
+    const report = reportRepo.getReport(reportId);
+    if (!report) {
+      return res.status(404).json({
+        ok: false,
+        error: "report not found"
+      });
+    }
+
+    let tools: unknown = {};
+    let findings: unknown = [];
+    try {
+      tools = report.tools_json ? JSON.parse(report.tools_json) : {};
+    } catch {
+      tools = {};
+    }
+    try {
+      findings = report.findings_json ? JSON.parse(report.findings_json) : [];
+    } catch {
+      findings = [];
+    }
+
+    return res.json({
+      ok: true,
+      report: {
+        id: report.id,
+        txHash: report.tx_hash,
+        createdAt: report.created_at,
+        tools,
+        findings
+      }
+    });
+  });
+
   router.get("/tx/:hash/report", (req, res) => {
     const txHash = String(req.params.hash ?? "").trim();
 

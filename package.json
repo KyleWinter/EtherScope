@@ -2,9 +2,11 @@
   "name": "etherscope-monorepo",
   "private": true,
   "scripts": {
-    "dev": "echo TODO dev",
-    "build": "echo TODO build",
-    "test": "echo TODO test"
+    "dev": "./start.sh",
+    "backend": "cd backend && pnpm run dev",
+    "frontend": "cd frontend && pnpm run dev",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

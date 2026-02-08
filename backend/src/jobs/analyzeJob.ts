@@ -38,15 +38,35 @@ export function registerAnalyzeJobHandler() {
   queue.register<AnalyzeJobInput>("analyze", async (job: Job<AnalyzeJobInput>) => {
     jobRepo.markRunning(job.id);
 
+    // Send initial status
     wsBus.publish(
-      { type: "job:update", jobId: job.id },
+      { type: "job:update", jobId: job.id, message: "Initializing analysis..." },
       { status: "running" }
     );
 
     try {
       const normalized = inputNormalize(job.input);
 
-      const { reportId } = await analyzeService.run(normalized);
+      // Scanning phase
+      wsBus.publish(
+        { type: "job:update", jobId: job.id, message: `Scanning project at ${normalized.projectRoot}...` },
+        { status: "running" }
+      );
+
+      // Running analysis
+      const tools = normalized.tools?.join(", ") || "slither";
+      wsBus.publish(
+        { type: "job:update", jobId: job.id, message: `Running ${tools} analysis...` },
+        { status: "running" }
+      );
+
+      const { reportId, findings } = await analyzeService.run(normalized);
+
+      // Processing results
+      wsBus.publish(
+        { type: "job:update", jobId: job.id, message: `Processing ${findings.length} findings...` },
+        { status: "running" }
+      );
 
       /* ---------- DB ---------- */
 
@@ -57,6 +77,11 @@ export function registerAnalyzeJobHandler() {
       }
 
       /* ---------- WS ---------- */
+
+      wsBus.publish(
+        { type: "job:update", jobId: job.id, message: `Analysis complete! Found ${findings.length} issues.` },
+        { status: "running" }
+      );
 
       wsBus.publish(
         { type: "job:done", jobId: job.id, reportId },

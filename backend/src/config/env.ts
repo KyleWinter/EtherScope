@@ -34,5 +34,8 @@ dbPath: resolveFromBackendRoot(
   toolPathExtra: (process.env.TOOL_PATH_EXTRA ?? `${process.env.HOME}/.local/bin`)
     .split(",")
     .map(s => s.trim())
-    .filter(Boolean)
+    .filter(Boolean),
+
+  etherscanApiKey: process.env.ETHERSCAN_API_KEY ?? "",
+  mainnetRpcUrl: process.env.MAINNET_RPC_URL ?? "https://eth.llamarpc.com",
 };
