@@ -50,11 +50,9 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -66,6 +64,11 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+# Python lib directory (NOT frontend/src/lib or other source libs!)
+# Only ignore Python package lib directories
+**/site-packages/lib/
+**/dist-packages/lib/
 
 # PyInstaller
 *.manifest
@@ -120,11 +123,13 @@ node_modules/
 jspm_packages/
 
 # Production build
-/build
-/dist
+build/
+dist/
+.next/
+out/
 
 # Testing
-/coverage
+coverage/
 
 # Misc
 .npm
@@ -153,9 +158,9 @@ yarn-error.log
 !.yarn/sdks
 !.yarn/versions
 
-# Next.js
-.next/
-out/
+# Next.js (already covered above in Production build)
+# .next/
+# out/
 next-env.d.ts
 
 # React
@@ -227,10 +232,13 @@ keystore/
 # Database
 # ============================================
 
-# SQLite
+# SQLite databases and temporary files
 *.db
 *.sqlite
 *.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite-journal
 
 # PostgreSQL
 *.dump
@@ -373,10 +381,10 @@ blockchain_data/
 *.onnx
 *.pb
 
-# Large datasets
-*.csv
-*.parquet
-*.feather
+# Large datasets (uncomment if you want to ignore these)
+# *.csv
+# *.parquet
+# *.feather
 
 # ============================================
 # Keep These Directories
