@@ -614,11 +614,8 @@ cd backend && pnpm run dev
 ```
 
 ### Getting Help
-
-1. Check [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment issues
-2. Check [BUILD_FIXES.md](./BUILD_FIXES.md) for build-related problems
-3. Review logs in terminal output
-4. Open an issue on GitHub with:
+1. Review logs in terminal output
+2. Open an issue on GitHub with:
    - Error message
    - Steps to reproduce
    - System info (OS, Node version, pnpm version)
