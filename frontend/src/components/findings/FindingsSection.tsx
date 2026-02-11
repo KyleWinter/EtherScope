@@ -134,12 +134,14 @@ export default function FindingsSection({ initialReportId }: { initialReportId?:
   const exportReport = (format: "json" | "csv") => {
     if (!report) return;
 
+    const filename = report.txHash || report.id || new Date().toISOString();
+
     if (format === "json") {
       const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `security-report-${report.txHash}.json`;
+      a.download = `security-report-${filename}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } else {
@@ -161,7 +163,7 @@ export default function FindingsSection({ initialReportId }: { initialReportId?:
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `security-report-${report.txHash}.csv`;
+      a.download = `security-report-${filename}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     }
@@ -305,7 +307,7 @@ export default function FindingsSection({ initialReportId }: { initialReportId?:
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Analysis Summary</CardTitle>
-                {report.txHash !== "demo" && (
+                {report.txHash && report.txHash !== "demo" && (
                   <Badge variant="outline" className="font-mono text-xs">
                     {report.txHash.slice(0, 10)}...{report.txHash.slice(-8)}
                   </Badge>

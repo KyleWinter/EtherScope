@@ -118,3 +118,27 @@ export async function getAccountTxs(address: string, page = 1, offset = 20) {
   });
   return data.result;
 }
+
+export async function getInternalTxs(txHash: string) {
+  try {
+    const data = await etherscanFetch({
+      module: "account",
+      action: "txlistinternal",
+      txhash: txHash,
+    });
+
+    // Return empty array if no internal transactions found
+    if (data.status === "0" && data.message === "No transactions found") {
+      return [];
+    }
+
+    return data.result || [];
+  } catch (error: any) {
+    // If error is "No transactions found", return empty array
+    if (error.message?.includes("No transactions found")) {
+      return [];
+    }
+    console.error("[etherscanService] Error fetching internal txs:", error.message);
+    return [];
+  }
+}

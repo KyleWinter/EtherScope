@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { useTransaction, useTransactionReceipt } from "@/hooks/useEtherscan";
 import { useNavigateTab } from "@/hooks/useNavigateTab";
 import { hexToNumber, formatEth, gweiFromWei, formatGas, truncateAddress } from "@/lib/utils";
+import TransactionTrace from "./TransactionTrace";
 
 export default function TransactionLookup({ initialHash }: { initialHash?: string }) {
   const [input, setInput] = useState(initialHash || "");
@@ -17,6 +18,37 @@ export default function TransactionLookup({ initialHash }: { initialHash?: strin
   const { data: tx, isLoading: txLoading, error: txError } = useTransaction(searchHash);
   const { data: receipt, isLoading: receiptLoading } = useTransactionReceipt(searchHash);
   const nav = useNavigateTab();
+
+  // Get transaction type info
+  const getTxTypeInfo = (tx: any) => {
+    const type = tx.type || "0x0";
+    const typeNum = parseInt(type, 16);
+
+    const typeInfo: Record<number, { label: string; color: string; desc: string }> = {
+      0: {
+        label: "Legacy",
+        color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+        desc: "Traditional transaction with fixed gasPrice"
+      },
+      1: {
+        label: "Access List (EIP-2930)",
+        color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+        desc: "Transaction with pre-declared access list"
+      },
+      2: {
+        label: "EIP-1559",
+        color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+        desc: "Dynamic fee transaction (most common)"
+      },
+      3: {
+        label: "Blob (EIP-4844)",
+        color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+        desc: "Blob transaction for L2 data"
+      }
+    };
+
+    return typeInfo[typeNum] || typeInfo[0];
+  };
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -86,6 +118,17 @@ export default function TransactionLookup({ initialHash }: { initialHash?: strin
                 <div className="grid grid-cols-[140px_1fr] gap-2">
                   <span className="text-muted-foreground">Tx Hash</span>
                   <span className="font-mono break-all">{tx.hash}</span>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] gap-2">
+                  <span className="text-muted-foreground">Type</span>
+                  <div className="flex items-center gap-2">
+                    <Badge className={`text-xs ${getTxTypeInfo(tx).color}`}>
+                      Type {parseInt(tx.type || "0x0", 16)}: {getTxTypeInfo(tx).label}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {getTxTypeInfo(tx).desc}
+                    </span>
+                  </div>
                 </div>
                 <div className="grid grid-cols-[140px_1fr] gap-2">
                   <span className="text-muted-foreground">Block</span>
@@ -207,6 +250,11 @@ export default function TransactionLookup({ initialHash }: { initialHash?: strin
                 </CardContent>
               )}
             </Card>
+          )}
+
+          {/* Transaction Trace */}
+          {searchHash && (
+            <TransactionTrace txHash={searchHash} />
           )}
         </>
       )}

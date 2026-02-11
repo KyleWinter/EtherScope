@@ -15,6 +15,7 @@ import { registerTxRoutes } from "./routes/tx";
 import { registerTrendsRoutes } from "./routes/trends";
 import { registerMonitorRoutes } from "./routes/monitor";
 import { registerEtherscanRoutes } from "./routes/etherscan";
+import { registerTraceRoutes } from "./routes/trace";
 
 import { createWsServer } from "./ws/wsServer";
 import { setWsBus } from "./serverBus";
@@ -36,6 +37,7 @@ export async function createApp() {
   registerTrendsRoutes(router);
   registerMonitorRoutes(router);
   registerEtherscanRoutes(router);
+  registerTraceRoutes(router);
 
   app.use(router);
 

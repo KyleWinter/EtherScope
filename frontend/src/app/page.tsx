@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Activity, Search, LayoutGrid, FileCode, Shield, TrendingUp, Sparkles } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Activity, Search, LayoutGrid, FileCode, Shield, TrendingUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { TabNavContext } from "@/hooks/useNavigateTab";
 import TransactionLookup from "@/components/tx/TransactionLookup";
 import BlockExplorer from "@/components/blocks/BlockExplorer";
 import ContractAnalysis from "@/components/contract/ContractAnalysis";
-import AnalyzerSection from "@/components/analyzer/AnalyzerSection";
 import FindingsSection from "@/components/findings/FindingsSection";
 import GasTrendsSection from "@/components/trends/GasTrendsSection";
 import MonitorSection from "@/components/monitor/MonitorSection";
 import WalletButton from "@/components/wallet/WalletButton";
+import { wsClient } from "@/lib/api/client";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("tx");
@@ -19,6 +19,14 @@ export default function Home() {
   const [blockNumber, setBlockNumber] = useState<string | undefined>();
   const [contractAddress, setContractAddress] = useState<string | undefined>();
   const [reportId, setReportId] = useState<string | undefined>();
+
+  // Initialize WebSocket connection on mount
+  useEffect(() => {
+    wsClient.connect();
+    return () => {
+      wsClient.disconnect();
+    };
+  }, []);
 
   const handleSetTxHash = useCallback((hash: string) => setTxHash(hash), []);
   const handleSetBlockNumber = useCallback((num: string) => setBlockNumber(num), []);
@@ -57,7 +65,7 @@ export default function Home() {
 
         <main className="container mx-auto px-4 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-7 lg:w-auto">
+            <TabsList className="grid w-full grid-cols-6 lg:w-auto">
               <TabsTrigger value="tx" className="flex items-center gap-2">
                 <Search className="h-4 w-4" />
                 <span className="hidden sm:inline">Tx Lookup</span>
@@ -69,10 +77,6 @@ export default function Home() {
               <TabsTrigger value="contract" className="flex items-center gap-2">
                 <FileCode className="h-4 w-4" />
                 <span className="hidden sm:inline">Contract</span>
-              </TabsTrigger>
-              <TabsTrigger value="analyzer" className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                <span className="hidden sm:inline">Analyzer</span>
               </TabsTrigger>
               <TabsTrigger value="findings" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
@@ -98,10 +102,6 @@ export default function Home() {
 
             <TabsContent value="contract" className="space-y-4">
               <ContractAnalysis key={contractAddress} initialAddress={contractAddress} />
-            </TabsContent>
-
-            <TabsContent value="analyzer" className="space-y-4">
-              <AnalyzerSection />
             </TabsContent>
 
             <TabsContent value="findings" className="space-y-4">

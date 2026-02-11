@@ -1,6 +1,7 @@
 import type {
   AnalysisReport, MonitoredAddress, GasTrend, WsMessage,
   EthTransaction, EthTransactionReceipt, EthBlock, ContractInfo,
+  StateDiff, GasProfile,
 } from "../types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
@@ -121,6 +122,27 @@ class ApiClient {
   async getAccountTransactions(address: string, page = 1, offset = 20): Promise<{ ok: boolean; data?: any[]; error?: string }> {
     return this.fetch(`/etherscan/account/${address}/txs?page=${page}&offset=${offset}`);
   }
+
+  // Trace endpoints
+  async getTransactionTrace(hash: string): Promise<{ ok: boolean; trace?: any; error?: string }> {
+    return this.fetch(`/trace/${hash}`);
+  }
+
+  async getInternalTransactions(hash: string): Promise<{ ok: boolean; internals?: any[]; count?: number; error?: string }> {
+    return this.fetch(`/trace/${hash}/internal`);
+  }
+
+  async getDecodedLogs(hash: string): Promise<{ ok: boolean; logs?: any[]; count?: number; error?: string }> {
+    return this.fetch(`/trace/${hash}/logs`);
+  }
+
+  async getStateDiff(hash: string): Promise<{ ok: boolean; stateDiff?: any; warning?: string; error?: string }> {
+    return this.fetch(`/trace/${hash}/state-diff`);
+  }
+
+  async getGasProfile(hash: string): Promise<{ ok: boolean; gasProfile?: GasProfile; error?: string; errorType?: string }> {
+    return this.fetch(`/trace/${hash}/gas-profile`);
+  }
 }
 
 export const apiClient = new ApiClient();
@@ -195,6 +217,15 @@ export class WebSocketClient {
     }
     this.listeners.get(channel)!.add(callback);
 
+    // Send subscribe message to server for both job:update and job:done
+    if (channel.startsWith("job:")) {
+      const jobId = channel.replace("job:", "");
+      this.sendSubscribe(`job:update:${jobId}`);
+      this.sendSubscribe(`job:done:${jobId}`);
+    } else {
+      this.sendSubscribe(channel);
+    }
+
     return () => {
       this.unsubscribe(channel, callback);
     };
@@ -206,20 +237,65 @@ export class WebSocketClient {
       channelListeners.delete(callback);
       if (channelListeners.size === 0) {
         this.listeners.delete(channel);
+
+        // Send unsubscribe message to server
+        if (channel.startsWith("job:")) {
+          const jobId = channel.replace("job:", "");
+          this.sendUnsubscribe(`job:update:${jobId}`);
+          this.sendUnsubscribe(`job:done:${jobId}`);
+        } else {
+          this.sendUnsubscribe(channel);
+        }
       }
     }
   }
 
-  private notifyListeners(message: WsMessage) {
-    const channel = this.getChannelFromMessage(message);
-    const channelListeners = this.listeners.get(channel);
-    if (channelListeners) {
-      channelListeners.forEach((callback) => callback(message));
+  private sendSubscribe(topic: string) {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "subscribe", topic }));
     }
+  }
 
-    const allListeners = this.listeners.get("*");
-    if (allListeners) {
-      allListeners.forEach((callback) => callback(message));
+  private sendUnsubscribe(topic: string) {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "unsubscribe", topic }));
+    }
+  }
+
+  private notifyListeners(message: any) {
+    // Backend sends { topic: "job:update:xxx", payload: { ... } }
+    if (message.topic && message.payload) {
+      const topic = message.topic as string;
+
+      // Extract jobId from topic for job-related messages
+      if (topic.startsWith("job:update:") || topic.startsWith("job:done:")) {
+        const jobId = topic.split(":")[2];
+        const channel = `job:${jobId}`;
+        const channelListeners = this.listeners.get(channel);
+
+        // Reconstruct WsMessage format for backward compatibility
+        const wsMessage: WsMessage = {
+          type: topic.startsWith("job:update:") ? "job:update" : "job:done",
+          jobId,
+          ...message.payload,
+        };
+
+        if (channelListeners) {
+          channelListeners.forEach((callback) => callback(wsMessage));
+        }
+      }
+
+      // Notify wildcard listeners
+      const allListeners = this.listeners.get("*");
+      if (allListeners) {
+        allListeners.forEach((callback) => callback(message.payload));
+      }
+    } else {
+      // Handle direct messages (like "hello")
+      const allListeners = this.listeners.get("*");
+      if (allListeners) {
+        allListeners.forEach((callback) => callback(message));
+      }
     }
   }
 

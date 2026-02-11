@@ -162,8 +162,8 @@ export default function GasTrendsSection() {
                     dataKey="gasUsed"
                     stroke="#3b82f6"
                     strokeWidth={2}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={false}
+                    activeDot={true}
                   />
                 </LineChart>
               </ResponsiveContainer>

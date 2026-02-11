@@ -11,6 +11,9 @@ import { apiClient } from "@/lib/api/client";
 import { wsClient } from "@/lib/api/client";
 import { useQuery } from "@tanstack/react-query";
 import type { WsMessage, Finding } from "@/lib/types";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import ContractGasAnalysis from "./ContractGasAnalysis";
 
 interface AbiItem {
   type: string;
@@ -30,6 +33,7 @@ export default function ContractAnalysis({ initialAddress }: { initialAddress?: 
   const [analysisRunning, setAnalysisRunning] = useState(false);
   const [analysisFindings, setAnalysisFindings] = useState<Finding[]>([]);
   const [analysisReportId, setAnalysisReportId] = useState<string | null>(null);
+  const [selectedSeverity, setSelectedSeverity] = useState<string | null>(null);
 
   const { data: contract, isLoading, error } = useContractInfo(searchAddress);
   const nav = useNavigateTab();
@@ -246,9 +250,26 @@ export default function ContractAnalysis({ initialAddress }: { initialAddress?: 
               </CardHeader>
               {showSource && (
                 <CardContent>
-                  <pre className="overflow-x-auto rounded bg-muted p-4 text-xs font-mono max-h-[500px] overflow-y-auto whitespace-pre-wrap">
-                    {contract.sourceCode}
-                  </pre>
+                  <div className="rounded-lg overflow-hidden max-h-[600px] overflow-y-auto border border-border">
+                    <SyntaxHighlighter
+                      language="solidity"
+                      style={oneDark}
+                      showLineNumbers
+                      customStyle={{
+                        margin: 0,
+                        borderRadius: 0,
+                        fontSize: "0.75rem",
+                        lineHeight: "1.5",
+                      }}
+                      codeTagProps={{
+                        style: {
+                          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                        },
+                      }}
+                    >
+                      {contract.sourceCode}
+                    </SyntaxHighlighter>
+                  </div>
                 </CardContent>
               )}
             </Card>
@@ -467,6 +488,7 @@ export default function ContractAnalysis({ initialAddress }: { initialAddress?: 
                     <div className="grid grid-cols-4 gap-2 text-center">
                       {(["high", "medium", "low", "info"] as const).map(sev => {
                         const count = analysisFindings.filter(f => f.severity === sev).length;
+                        const isSelected = selectedSeverity === sev;
                         const colors = {
                           high: "bg-red-50 dark:bg-red-950/20 text-red-600 border-red-200 dark:border-red-800",
                           medium: "bg-orange-50 dark:bg-orange-950/20 text-orange-600 border-orange-200 dark:border-orange-800",
@@ -474,17 +496,41 @@ export default function ContractAnalysis({ initialAddress }: { initialAddress?: 
                           info: "bg-blue-50 dark:bg-blue-950/20 text-blue-600 border-blue-200 dark:border-blue-800",
                         };
                         return (
-                          <div key={sev} className={`rounded-md border p-2 ${colors[sev]}`}>
+                          <button
+                            key={sev}
+                            onClick={() => setSelectedSeverity(selectedSeverity === sev ? null : sev)}
+                            className={`rounded-md border p-2 transition-all hover:scale-105 ${colors[sev]} ${
+                              isSelected ? "ring-2 ring-offset-2 ring-primary" : ""
+                            } ${count === 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                            disabled={count === 0}
+                          >
                             <div className="text-lg font-bold">{count}</div>
                             <div className="text-[10px] uppercase font-medium">{sev}</div>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
 
+                    {/* Filter indicator */}
+                    {selectedSeverity && (
+                      <div className="mb-3 flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">
+                          Filtering by: <Badge className="ml-1">{selectedSeverity.toUpperCase()}</Badge>
+                        </span>
+                        <button
+                          onClick={() => setSelectedSeverity(null)}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Clear filter
+                        </button>
+                      </div>
+                    )}
+
                     {/* Finding list */}
                     <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                      {analysisFindings.map((finding, idx) => {
+                      {analysisFindings
+                        .filter(f => !selectedSeverity || f.severity === selectedSeverity)
+                        .map((finding, idx) => {
                         const sevIcon = {
                           high: <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />,
                           medium: <AlertTriangle className="h-4 w-4 text-orange-500 flex-shrink-0" />,
@@ -538,6 +584,11 @@ export default function ContractAnalysis({ initialAddress }: { initialAddress?: 
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Gas Analysis */}
+          {contract && searchAddress && (
+            <ContractGasAnalysis contractAddress={searchAddress} />
           )}
         </>
       )}

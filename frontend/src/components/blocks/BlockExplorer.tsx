@@ -3,10 +3,42 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 import { useLatestBlock, useBlock } from "@/hooks/useEtherscan";
 import { useNavigateTab } from "@/hooks/useNavigateTab";
 import { hexToNumber, formatGas, formatEth, truncateAddress } from "@/lib/utils";
 import type { EthTransaction } from "@/lib/types";
+
+// Get transaction type info
+const getTxTypeInfo = (tx: EthTransaction) => {
+  const type = tx.type || "0x0";
+  const typeNum = parseInt(type, 16);
+
+  const typeInfo: Record<number, { label: string; color: string; desc: string }> = {
+    0: {
+      label: "Legacy",
+      color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+      desc: "Traditional transaction with fixed gasPrice"
+    },
+    1: {
+      label: "EIP-2930",
+      color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      desc: "Transaction with pre-declared access list"
+    },
+    2: {
+      label: "EIP-1559",
+      color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      desc: "Dynamic fee transaction (most common)"
+    },
+    3: {
+      label: "EIP-4844",
+      color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+      desc: "Blob transaction for L2 data"
+    }
+  };
+
+  return typeInfo[typeNum] || typeInfo[0];
+};
 
 export default function BlockExplorer({ initialBlockNumber }: { initialBlockNumber?: string }) {
   const [blockInput, setBlockInput] = useState("");
@@ -212,6 +244,7 @@ export default function BlockExplorer({ initialBlockNumber }: { initialBlockNumb
                       <tr className="border-b text-muted-foreground">
                         <th className="text-left py-2 pr-3">#</th>
                         <th className="text-left py-2 pr-3">Tx Hash</th>
+                        <th className="text-left py-2 pr-3">Type</th>
                         <th className="text-left py-2 pr-3">From</th>
                         <th className="text-left py-2 pr-3">To</th>
                         <th className="text-right py-2 pr-3">Value</th>
@@ -225,7 +258,7 @@ export default function BlockExplorer({ initialBlockNumber }: { initialBlockNumb
                           return (
                             <tr key={i} className="border-b hover:bg-muted/50">
                               <td className="py-2 pr-3 text-muted-foreground">{rowNum}</td>
-                              <td colSpan={5} className="py-2">
+                              <td colSpan={6} className="py-2">
                                 <button
                                   className="font-mono text-primary hover:underline"
                                   onClick={() => {
@@ -240,6 +273,7 @@ export default function BlockExplorer({ initialBlockNumber }: { initialBlockNumb
                           );
                         }
                         const t = txItem as EthTransaction;
+                        const txTypeInfo = getTxTypeInfo(t);
                         return (
                           <tr key={i} className="border-b hover:bg-muted/50">
                             <td className="py-2 pr-3 text-muted-foreground">{rowNum}</td>
@@ -253,6 +287,11 @@ export default function BlockExplorer({ initialBlockNumber }: { initialBlockNumb
                               >
                                 {truncateAddress(t.hash, 10, 8)}
                               </button>
+                            </td>
+                            <td className="py-2 pr-3">
+                              <Badge className={`text-[10px] ${txTypeInfo.color}`}>
+                                {txTypeInfo.label}
+                              </Badge>
                             </td>
                             <td className="py-2 pr-3 font-mono">{truncateAddress(t.from)}</td>
                             <td className="py-2 pr-3 font-mono">{t.to ? truncateAddress(t.to) : "Create"}</td>
