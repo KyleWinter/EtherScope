@@ -1,5 +1,5 @@
 export type WsTopic =
-  | { type: "job:update"; jobId: string }
+  | { type: "job:update"; jobId: string; message?: string }
   | { type: "job:done"; jobId: string; reportId?: string; error?: string }
   | { type: "monitor:alert"; address: string; message: string };
 

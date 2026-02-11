@@ -21,12 +21,14 @@ export interface AnalysisReport {
       exitCode?: number;
       parseError?: string;
       noJson?: boolean;
+      message?: string;
     };
     mythril?: {
       ok: boolean;
       exitCode?: number;
       parseError?: string;
       noJson?: boolean;
+      message?: string;
     };
   };
   findings: Finding[];

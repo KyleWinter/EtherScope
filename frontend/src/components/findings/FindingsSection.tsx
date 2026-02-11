@@ -11,6 +11,7 @@ import type { Finding, AnalysisReport } from "@/lib/types";
 
 // Demo data for preview
 const DEMO_REPORT: AnalysisReport = {
+  id: "demo-report-1",
   txHash: "demo",
   findings: [
     {
