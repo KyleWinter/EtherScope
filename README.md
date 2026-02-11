@@ -162,6 +162,9 @@ cd EtherScope
 
 # Install all workspace dependencies
 pnpm install
+
+# Build the workspace
+pnpm -r run build
 ```
 
 This will install dependencies for:
@@ -222,6 +225,7 @@ EOF
 ```bash
 ./start.sh
 ```
+For those who cannot build succesfully by executing start script, try manual start in option B step by step. You may also refer to `build.log` for fixing.
 
 **Option B: Start manually in separate terminals**
 
