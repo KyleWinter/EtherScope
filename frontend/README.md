@@ -10,15 +10,6 @@ A sophisticated web interface for debugging and analyzing Ethereum transactions.
 - **Real-time Monitoring**: Subscribe to contracts and receive alerts for suspicious activity
 - **Transaction Traces**: Visualize execution flow with detailed call trees
 
-## Tech Stack
-
-- **Next.js 14** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first styling
-- **React Query** - Data fetching and state management
-- **Recharts** - Data visualization
-- **WebSocket** - Real-time updates
-
 ## Getting Started
 
 ### Prerequisites
@@ -76,6 +67,10 @@ frontend/
 │   │   └── ui/                # Reusable UI components
 │   ├── hooks/                 # Custom React hooks
 │   │   └── useWebSocket.ts    # WebSocket hook
+│   ├── providers/              # Context providers
+│   │   └── WalletProvider.tsx 
+│   ├── types/                 # Listen type on ethereum
+│   │   └── ethereum.d.ts      
 │   └── lib/                   # Utilities
 │       ├── api/
 │       │   └── client.ts      # API & WebSocket client
@@ -143,14 +138,6 @@ const response = await apiClient.analyze({
   tools: ["slither"],
 });
 ```
-
-## Contributing
-
-1. Follow the existing code structure and patterns
-2. Use TypeScript strictly
-3. Keep components focused and reusable
-4. Add proper error handling
-5. Test with the backend running
 
 ## License
 

@@ -25,7 +25,7 @@ if [ ! -d "node_modules" ] || [ ! -d "backend/node_modules" ] || [ ! -d "fronten
     echo "📦 Installing dependencies..."
     pnpm install
     echo "🔨 Building workspace packages..."
-    pnpm -r --reporter=append-only run build 2>&1 | tee build.log
+    #pnpm -r --reporter=append-only run build 2>&1 | tee build.log
 fi
 
 # Create data directory

@@ -25,62 +25,6 @@ contracts/
 └── deployments/            # Deployment outputs (JSON)
 ```
 
-## Quick Start
-
-### 1. Install Dependencies
-
-```bash
-cd contracts
-forge install
-```
-
-### 2. Compile Contracts
-
-```bash
-forge build
-```
-
-### 3. Run Tests
-
-```bash
-# Run all tests
-forge test -vvv
-
-# Run integration tests only
-forge test --match-path test/integration/FullAnalysis.t.sol -vvv
-
-# Run specific test
-forge test --match-test test_TraceHelper_SingleCall -vvv
-```
-
-### 4. Deploy Contracts
-
-#### Local Anvil
-
-```bash
-# Terminal 1: Start Anvil
-anvil
-
-# Terminal 2: Deploy
-forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --broadcast
-```
-
-#### Sepolia Testnet
-
-```bash
-# Set environment variables
-export SEPOLIA_RPC_URL="https://sepolia.infura.io/v3/YOUR_KEY"
-export PRIVATE_KEY="your_private_key"
-
-# Deploy
-forge script script/Deploy.s.sol \
-  --rpc-url $SEPOLIA_RPC_URL \
-  --broadcast \
-  --verify
-```
-
-Deployment addresses will be saved to `deployments/deployments-<chainId>.json`.
-
 ## Contract Overview
 
 ### Analyzer Contracts
@@ -95,27 +39,6 @@ Deployment addresses will be saved to `deployments/deployments-<chainId>.json`.
 - `label()`: Emit custom debug labels
 - Emits `CallStarted` and `CallEnded` events for each call
 
-**Usage**:
-```solidity
-TraceHelper helper = TraceHelper(0x...);
-
-// Single call
-(bool success, bytes memory data) = helper.proxyCall{value: 1 ether}(
-    targetContract,
-    abi.encodeWithSignature("deposit()"),
-    1 ether
-);
-
-// Batch calls
-address[] memory targets = [addr1, addr2];
-bytes[] memory data = [data1, data2];
-uint256[] memory values = [val1, val2];
-
-Types.CallRecord[] memory records = helper.batchProxyCall(
-    targets, data, values, false
-);
-```
-
 #### 2. StorageInspector.sol
 
 **Purpose**: Compute storage slots for mappings, arrays, and proxies.
@@ -126,20 +49,6 @@ Types.CallRecord[] memory records = helper.batchProxyCall(
 - `dynamicArraySlot()`: Compute starting slot for dynamic arrays
 - EIP-1967 proxy slot constants
 
-**Usage**:
-```solidity
-StorageInspector inspector = StorageInspector(0x...);
-
-// Compute mapping slot: balances[alice]
-bytes32 slot = inspector.mappingSlotAddr(
-    bytes32(uint256(0)), // base slot
-    alice                // key
-);
-
-// Read EIP-1967 implementation
-address impl = inspector.getEIP1967Implementation(proxyAddress);
-```
-
 #### 3. BatchStateReader.sol
 
 **Purpose**: Batch-read balances and allowances in a single `eth_call`.
@@ -149,22 +58,6 @@ address impl = inspector.getEIP1967Implementation(proxyAddress);
 - `getTokenBalances()`: Read ERC-20 balances
 - `getAllowances()`: Read ERC-20 allowances
 - `getBalancesAndAllowances()`: Combined read
-
-**Usage**:
-```solidity
-BatchStateReader reader = BatchStateReader(0x...);
-
-// Read ETH balances
-address[] memory accounts = [alice, bob, charlie];
-uint256[] memory balances = reader.getEthBalances(accounts);
-
-// Read token balances
-Types.TokenQuery[] memory queries = new Types.TokenQuery[](2);
-queries[0] = Types.TokenQuery(tokenAddr, alice);
-queries[1] = Types.TokenQuery(tokenAddr, bob);
-
-Types.BalanceResult[] memory results = reader.getTokenBalances(queries);
-```
 
 ### Sample Contracts
 
@@ -358,24 +251,3 @@ For issues or questions:
 - GitHub Issues: https://github.com/yourusername/EtherScope/issues
 - Documentation: See main project README
 
-## Useful Commands
-
-```bash
-# Format code
-forge fmt
-
-# Gas report
-forge test --gas-report
-
-# Coverage
-forge coverage
-
-# Snapshot gas costs
-forge snapshot
-
-# Clean build artifacts
-forge clean
-
-# Update dependencies
-forge update
-```

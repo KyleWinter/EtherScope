@@ -105,18 +105,9 @@ MetaMask integration:
 git clone <your-repository-url>
 cd EtherScope
 
-# 2. Run automated setup
-./setup.sh
-
-# 3. Start the application
+# 2. Start the application
 ./start.sh
 ```
-
-The setup script will:
-- ✅ Check system requirements
-- ✅ Install dependencies
-- ✅ Configure environment variables
-- ✅ Create necessary directories
 
 Access the application:
 - **Frontend**: http://localhost:3000
@@ -162,9 +153,6 @@ cd EtherScope
 
 # Install all workspace dependencies
 pnpm install
-
-# Build the workspace
-pnpm -r run build
 ```
 
 This will install dependencies for:
@@ -337,6 +325,7 @@ EtherScope/
 │   │   ├── components/      # React components
 │   │   ├── lib/             # Utilities and types
 │   │   ├── hooks/           # Custom React hooks
+│   │   ├── types/           # Listen type on ethereum
 │   │   └── providers/       # Context providers
 │   ├── public/              # Static assets
 │   ├── .env.local           # Frontend config (git ignored)
@@ -360,14 +349,15 @@ EtherScope/
 │   ├── cli/                 # Command-line interface
 │   └── adapters/            # Analysis tool adapters
 │       ├── slither/         # Slither adapter
+│       ├── hardgat-plugin/  # Hardhat plugin
 │       └── mythril/         # Mythril adapter
 │
 ├── contracts/                # Solidity smart contracts (Foundry)
 │   ├── src/                 # Contract source code
 │   ├── test/                # Contract tests
+│   ├── script/              # Scripts for deployment and address registry
 │   └── lib/                 # Dependencies (forge-std)
 │
-├── setup.sh                  # 🔧 Automated setup script
 ├── start.sh                  # 🚀 Quick start script
 ├── pnpm-workspace.yaml      # pnpm workspace configuration
 ├── .gitignore               # Git ignore rules
