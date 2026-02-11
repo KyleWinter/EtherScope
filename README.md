@@ -627,9 +627,6 @@ cd backend && pnpm run dev
 
 ## 📚 Additional Documentation
 
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide with production setup
-- **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Step-by-step deployment checklist
-- **[BUILD_FIXES.md](./BUILD_FIXES.md)** - Known build issues and solutions
 - **[backend/.env.example](./backend/.env.example)** - Backend environment variable reference
 - **[frontend/.env.example](./frontend/.env.example)** - Frontend environment variable reference
 
