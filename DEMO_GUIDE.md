@@ -1453,8 +1453,6 @@ slither VulnerableBank.sol
 
 ---
 
-**Document Version:** 3.0
-**Last Updated:** February 12, 2026
+**Document Version:** 2.0
+**Last Updated:** February 11, 2026
 **Status:** Ready for Presentation ✓
-
-**Good luck with your presentation! 🚀**
