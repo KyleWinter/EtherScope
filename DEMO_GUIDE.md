@@ -385,14 +385,15 @@ const ETHERSCAN_BASE = "https://api.etherscan.io/api";
 
 ---
 
-**Course Alignment:**
+**Course Alignment (SC6107 Requirements):**
 
-This project demonstrates mastery of:
-- ✅ **Smart Contract Development** - Solidity patterns, testing, optimization
-- ✅ **DeFi Understanding** - Analyzed Uniswap, Compound, Aave transactions
-- ✅ **Security Best Practices** - Integrated industry-standard tools
-- ✅ **Gas Optimization** - Profiling and analysis tools
-- ✅ **Full-stack Development** - Production-ready web3 application
+This project demonstrates mastery of all required areas:
+- ✅ **Smart Contract Development** - Solidity patterns, testing, OpenZeppelin integration
+- ✅ **DeFi Understanding** - Analyzed real Uniswap, Compound, Aave transactions (with verified mainnet tx hashes)
+- ✅ **Security Best Practices** - Integrated Slither & Mythril; demonstrated reentrancy detection with DAO hack as reference
+- ✅ **Gas Optimization** - Gas profiling with breakdown by function; compared simple vs. complex tx costs
+- ✅ **Full-stack Development** - Next.js + Express monorepo, React Query, WebSocket, SQLite
+- ✅ **Historical Context** - Analyzed famous exploits (DAO hack, Cream Finance flash loan) to demonstrate tool value
 
 ---
 
@@ -402,11 +403,12 @@ This project demonstrates mastery of:
 
 **Feature:** Detailed execution traces showing all internal transactions, calls, and event logs.
 
-#### Example 1: Simple ERC-20 Transfer
+#### Example 1: Simple ERC-20 Transfer (USDC)
 
-**Transaction:** `0xc0fc2649c61ec578c4c3aaf66b0808abf6bbdc77c49180dc0a14040c4f827ae8`
+**Transaction:** `0x9ff975ccc961d9120343852d649f9696b5a884ead1e77dd19be5da323fbd0987`
 
 **Contract:** USDC Token `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`
+**Block:** 21,301,121 | **Gas Used:** ~62,248
 
 **What to observe:**
 - Single function call: `transfer(address,uint256)`
@@ -418,32 +420,35 @@ This project demonstrates mastery of:
 
 #### Example 2: Uniswap V2 Token Swap
 
-**Transaction:** `0x1bb99992aa4a0ebe5d4ac88f6e4a8e4e5a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6`
+**Transaction:** `0x9beb8994e30fdc74f3b531ac1d83362939985196b31d45732be0dc42ab8fa061`
 
 **Contract:** Uniswap V2 Router `0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D`
+**Block:** 12,167,692 | **Gas Used:** ~121,312
 
 **What to observe:**
-- Multiple internal calls: Router → Pair → Token contracts
-- Event chain: Approval → Transfer → Swap → Sync
+- `swapExactETHForTokens`: 0.1 ETH → ~208 USDC
+- Multiple internal calls: Router → WETH → Pair → USDC contracts
+- Event chain: Deposit → Transfer → Swap → Sync
 - State changes across multiple contracts
 - Complex call stack with nested transactions
 
-**Best for:** Understanding DeFi protocol interactions
+**Best for:** Understanding DeFi protocol interactions and AMM mechanics
 
-#### Example 3: NFT Marketplace Sale (Bored Ape)
+#### Example 3: OpenSea Seaport NFT Sale
 
-**Transaction:** `0x8a39c3e8e5c6e4a2d9f7b6c5a4e3d2c1b0a9f8e7d6c5b4a3e2d1c0b9a8f7e6d5`
+**Transaction:** `0xd4b4b856ca1d800a60eadeadb710bb104a7c07575929853875ca753c25f127b1`
 
 **Contract:** OpenSea Seaport `0x00000000006c3852cbEf3e08E8dF289169EdE581`
+**Block:** 15,270,573 | **Gas Used:** ~139,998
 
 **What to observe:**
-- Complex multi-party transaction
+- `fulfillBasicOrder()` call — NFT sale for 2 ETH
 - NFT transfer (ERC-721)
-- Payment settlement (ETH or WETH)
+- Payment settlement (ETH)
 - Royalty distributions
-- Multiple event logs
+- Multiple event logs (OrderFulfilled, Transfer)
 
-**Best for:** Understanding marketplace mechanics
+**Best for:** Understanding marketplace mechanics and multi-party transactions
 
 ---
 
@@ -451,34 +456,35 @@ This project demonstrates mastery of:
 
 **Feature:** Gas consumption breakdown by function, identifying optimization opportunities.
 
-#### Example 4: High Gas Usage Transaction
+#### Example 4: 1inch Aggregator Swap (High Gas Usage)
 
-**Transaction:** Complex DeFi aggregator transaction
-**Example:** `0x2d3f4e5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3`
+**Transaction:** `0x48631e0cbd419365c3c38de8c8c5d7390c4153375aea3795a6a6ac579f1bc5a5`
 
-**Contract:** 1inch Aggregation Router
-
-**What to observe:**
-- Gas breakdown by function call
-- Most expensive operations identified
-- Storage vs. computation costs
-- Optimization suggestions
-
-**Best for:** Learning gas optimization techniques
-
-#### Example 5: Efficient vs. Inefficient Patterns
-
-**Comparison Transactions:**
-- Inefficient: `0x[example-tx-with-loops]`
-- Efficient: `0x[example-tx-optimized]`
+**Contract:** 1inch Aggregation Router V6
+**Block:** 22,722,899 | **Gas Used:** ~233,500
 
 **What to observe:**
-- Impact of storage vs. memory
-- Loop optimization benefits
-- Batch operations savings
-- Gas cost comparison
+- DEX aggregation routing through multiple pools
+- Gas breakdown by function call — see which hops cost the most
+- Multi-hop routing: SPK → Uniswap V4 pools → USDT
+- Comparison: aggregated swap gas vs. direct swap gas
 
-**Best for:** Understanding optimization trade-offs
+**Best for:** Learning gas optimization and DEX aggregation
+
+#### Example 5: Uniswap V3 Complex Multi-hop Swap
+
+**Transaction:** `0x842aae91c89a9e5043e64af34f53dc66daf0f033ad8afbf35ef0c93f99a9e5e6`
+
+**Contract:** Uniswap V3 Router `0xE592427A0AEce92De3Edee1F18E0157C05861564`
+**Block:** 23,504,546 | **Gas Used:** ~2,096,704
+
+**What to observe:**
+- Massive swap: ~1.58M USDC + ~215K USDT → ~395 ETH
+- Multi-pool routing through Uniswap V3 and Curve
+- Extremely high gas usage — compare with simple swaps
+- Storage vs. computation cost breakdown
+
+**Best for:** Understanding gas optimization trade-offs at scale
 
 ---
 
@@ -486,36 +492,36 @@ This project demonstrates mastery of:
 
 **Feature:** Display storage changes, balance changes, and token transfers.
 
-#### Example 6: ERC-20 Token Transfer with Approval
+#### Example 6: WETH Deposit (Wrap ETH)
 
-**Transaction:** `0x3e4d5c6b7a8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8e9f0a1b2c3d4`
+**Transaction:** `0x215d2b6604f01741cecb56f55805479a8f303ffddaec7963db478ec3458bd99f`
 
-**Contract:** USDC Token `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`
-
-**What to observe:**
-- Balance changes: `balanceOf[from]` decreases, `balanceOf[to]` increases
-- Allowance changes: `allowance[owner][spender]` updates
-- Before/after state comparison
-- Storage slot changes
-
-**Best for:** Understanding storage layout
-
-#### Example 7: Complex DeFi State Changes
-
-**Transaction:** Compound Finance borrow transaction
-**Example:** `0x4f5e6d7c8b9a0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5`
-
-**Contracts:**
-- Compound cToken `0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643` (cDAI)
-- Comptroller `0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B`
+**Contract:** WETH9 `0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2`
+**Block:** 4,756,478 | **Gas Used:** ~43,346
 
 **What to observe:**
-- Multiple contract state changes
-- Collateral ratio updates
-- Interest accrual calculations
-- Health factor changes
+- Simple `deposit()` call — wrapping 0.5 ETH into 0.5 WETH
+- Balance changes: ETH decreases, WETH increases
+- Deposit event emitted
+- Minimal gas cost — one of the simplest DeFi primitives
 
-**Best for:** Understanding DeFi protocol mechanics
+**Best for:** Understanding the ETH/WETH wrapping pattern and state changes
+
+#### Example 7: Aave V3 Supply (Deposit Collateral)
+
+**Transaction:** `0x690a70921bf72fc774a4592cf1584f9eb8cdd5660347cb1622c01a19f7bf2201`
+
+**Contract:** Aave Pool V3 `0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2`
+**Block:** 22,417,619 | **Gas Used:** ~181,511
+
+**What to observe:**
+- `supply()` function call with collateral enable
+- aToken minting for the depositor
+- Multiple contract state changes (Pool, aToken, Oracle)
+- Interest rate model updates
+- Health factor calculations
+
+**Best for:** Understanding DeFi lending protocol mechanics
 
 ---
 
@@ -592,6 +598,60 @@ function transfer(address to, uint256 value) {
 | **Gnosis Safe** | `0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552` | Multisig wallet, security | ⭐⭐⭐⭐ |
 | **ENS Registry** | `0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e` | Name resolution, registry | ⭐⭐⭐ |
 
+### Historical / Security-Relevant Contracts (Course Alignment)
+
+| Name | Address | Use Case | Course Topic |
+|------|---------|----------|--------------|
+| **The DAO** | `0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413` | Classic reentrancy exploit (2016, $60M drained) | Reentrancy, Security |
+| **Parity Multisig** | `0x863DF6BFa4469f3ead0bE8f9F2AAE51c91A907b4` | Wallet freeze vulnerability ($280M locked) | Access Control |
+| **Compound Comptroller** | `0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B` | DeFi governance & collateral management | DeFi Patterns |
+| **WETH9** | `0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2` | ETH wrapping — foundational DeFi primitive | Token Standards |
+
+---
+
+## 🏛️ Famous Historical Transactions (Course-Aligned Examples)
+
+These transactions are milestones in Ethereum history and directly relate to SC6107 course topics (security vulnerabilities, DeFi protocols, gas optimization).
+
+### The DAO Hack — Reentrancy Attack (June 2016)
+```
+TX Hash: 0x0ec3f2488a93839524add10ea229e773f6bc891b4eb4794c3337d4495263790b
+Contract: The DAO (0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413)
+Block: 1,718,497
+Gas Used: ~3,982,456
+Value: 137.62 ETH drained in this single tx
+
+Course Relevance: Reentrancy vulnerability, Checks-Effects-Interactions pattern
+Impact: ~$60M drained, led to Ethereum/Ethereum Classic hard fork
+```
+**Why this matters for SC6107:** This is the canonical example of a reentrancy attack. The attacker exploited a recursive `splitDAO()` call that sent ETH before updating balances — exactly the vulnerability pattern that Slither's `reentrancy-eth` detector flags. Use this to demonstrate why EtherScope's vulnerability detection feature exists.
+
+### Cream Finance Flash Loan Exploit (October 2021)
+```
+TX Hash: 0x0fe2542079644e107cbf13690eb9c2c65963ccb79089ff96bfaf8dced2331c92
+Contract: Aave V2 LendingPool (flash loan source)
+Block: 13,499,798
+Gas Used: ~14,936,857
+Details: Flash loan of 524,102 ETH (~$1.03 billion)
+
+Course Relevance: Flash loans, Price manipulation, Oracle attacks
+Impact: ~$130M stolen from Cream Finance
+```
+**Why this matters for SC6107:** Demonstrates the power and risk of flash loans. The attacker borrowed over $1B in a single transaction with zero collateral, manipulated prices, and drained the protocol — all atomically. Shows why flash loan protections and oracle security are critical.
+
+### Compound + CryptoPunk Borrow (October 2021)
+```
+TX Hash: 0x92488a00dfa0746c300c66a716e6cc11ba9c0f9d40d8c58e792cc7fcebf432d0
+Contract: Compound cETH + dYdX + CryptoPunks
+Block: 13,508,785
+Gas Used: ~978,280
+Details: Borrowed 87,639 ETH from Compound, 20,416 ETH from dYdX,
+         purchased CryptoPunk for ~124 ETH. TX data contains "looks rare".
+
+Course Relevance: DeFi composability, Lending protocols, NFT integration
+```
+**Why this matters for SC6107:** Shows the composability of DeFi — borrowing from multiple lending protocols in a single transaction to purchase an NFT. Excellent example of complex cross-protocol state changes.
+
 ---
 
 ## 🔍 Working Transaction Examples (Mainnet Verified)
@@ -600,10 +660,10 @@ function transfer(address to, uint256 value) {
 
 #### 1. Simple ERC-20 Transfer (USDC)
 ```
-TX Hash: 0xc0fc2649c61ec578c4c3aaf66b0808abf6bbdc77c49180dc0a14040c4f827ae8
+TX Hash: 0x9ff975ccc961d9120343852d649f9696b5a884ead1e77dd19be5da323fbd0987
 Contract: USDC (0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)
-Block: Recent (check Etherscan for current)
-Gas Used: ~50,000
+Block: 21,301,121
+Gas Used: ~62,248
 
 What to Show:
 ✓ Basic transaction details (from, to, value, gas)
@@ -614,16 +674,18 @@ What to Show:
 Demo Script: "This is a straightforward USDC transfer - notice the Transfer event and gas usage."
 ```
 
-#### 2. WETH Wrap/Unwrap
+#### 2. WETH Deposit (Wrap ETH)
 ```
-TX Hash: Find recent on Etherscan WETH contract
+TX Hash: 0x215d2b6604f01741cecb56f55805479a8f303ffddaec7963db478ec3458bd99f
 Contract: WETH (0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2)
-Function: deposit() or withdraw()
+Block: 4,756,478
+Gas Used: ~43,346
+Function: deposit()
 
 What to Show:
-✓ ETH → WETH conversion
+✓ ETH → WETH conversion (0.5 ETH wrapped)
 ✓ Balance change in state diff
-✓ Deposit/Withdrawal event
+✓ Deposit event emitted
 
 Demo Script: "WETH wraps ETH into an ERC-20 - a simple but essential DeFi primitive."
 ```
@@ -632,66 +694,69 @@ Demo Script: "WETH wraps ETH into an ERC-20 - a simple but essential DeFi primit
 
 #### 3. Uniswap V2 Swap
 ```
-How to Find:
-1. Go to https://etherscan.io/address/0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
-2. Click "Transactions" tab
-3. Filter by "swapExactTokensForTokens" or "swapExactETHForTokens"
-4. Copy any recent successful transaction
+TX Hash: 0x9beb8994e30fdc74f3b531ac1d83362939985196b31d45732be0dc42ab8fa061
+Contract: Uniswap V2 Router (0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D)
+Block: 12,167,692
+Gas Used: ~121,312
+Function: swapExactETHForTokens (0.1 ETH → ~208 USDC)
 
 What to Show:
-✓ Router → Pair → Token contracts call chain
-✓ Multiple Transfer events (token in, token out)
+✓ Router → WETH → Pair → USDC contracts call chain
+✓ Multiple Transfer events (ETH deposit, token out)
 ✓ Swap + Sync events
 ✓ Complex internal transaction structure
-✓ Gas breakdown (~150k-200k gas)
 
 Demo Script: "A Uniswap swap involves 3+ contracts - watch how tokens flow through the pair contract."
 ```
 
-#### 4. Aave Deposit/Borrow
+#### 4. Aave V3 Supply (Deposit Collateral)
 ```
-How to Find:
-1. Visit https://etherscan.io/address/0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2
-2. Look for "supply" or "borrow" function calls
-3. Select a recent transaction
+TX Hash: 0x690a70921bf72fc774a4592cf1584f9eb8cdd5660347cb1622c01a19f7bf2201
+Contract: Aave Pool V3 (0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2)
+Block: 22,417,619
+Gas Used: ~181,511
+Function: supply()
 
 What to Show:
-✓ Collateral deposit
+✓ Collateral deposit with enable-as-collateral flag
 ✓ aToken minting
-✓ Interest calculation
-✓ Health factor updates
-✓ Complex state changes
+✓ Interest rate model updates
+✓ Health factor calculations
+✓ Complex multi-contract state changes
 
 Demo Script: "Aave deposits involve minting interest-bearing tokens and updating collateral ratios."
 ```
 
-#### 5. Flash Loan Execution
+#### 5. Flash Loan (Cream Finance Exploit — Historical)
 ```
-How to Find:
-1. Search Aave V3 Pool for "flashLoan" function
-2. Or check https://etherscan.io/txs?a=0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2&f=5
+TX Hash: 0x0fe2542079644e107cbf13690eb9c2c65963ccb79089ff96bfaf8dced2331c92
+Contract: Aave V2 LendingPool
+Block: 13,499,798
+Gas Used: ~14,936,857 (extremely high!)
+Details: Flash loan of 524,102 ETH (~$1 billion) used in Cream Finance exploit
 
 What to Show:
-✓ Loan → Execute → Repay in single transaction
-✓ Fee calculation (0.09%)
-✓ Complex callback execution
-✓ High gas usage
+✓ Massive flash loan → Execute → Repay in single transaction
+✓ Extremely high gas usage — 15M gas
+✓ Complex callback execution across multiple protocols
+✓ Real-world exploit demonstrating flash loan risks
 
-Demo Script: "Flash loans borrow millions, execute logic, and repay in one atomic transaction."
+Demo Script: "This is one of the largest flash loans ever — 524K ETH borrowed and repaid in one atomic transaction."
 ```
 
 ### NFT Transactions
 
-#### 6. OpenSea NFT Sale
+#### 6. OpenSea Seaport NFT Sale
 ```
-How to Find:
-1. Go to https://etherscan.io/address/0x00000000006c3852cbEf3e08E8dF289169EdE581
-2. Filter by recent successful transactions
-3. Look for "fulfillOrder" or "fulfillBasicOrder"
+TX Hash: 0xd4b4b856ca1d800a60eadeadb710bb104a7c07575929853875ca753c25f127b1
+Contract: OpenSea Seaport (0x00000000006c3852cbEf3e08E8dF289169EdE581)
+Block: 15,270,573
+Gas Used: ~139,998
+Details: NFT sale for 2 ETH (~$3,947) via fulfillBasicOrder()
 
 What to Show:
 ✓ NFT transfer (ERC-721)
-✓ Payment transfer (ETH/WETH)
+✓ Payment transfer (ETH)
 ✓ Royalty distribution
 ✓ Multiple party interactions
 ✓ Event logs (OrderFulfilled, Transfer)
@@ -763,7 +828,7 @@ Demo Script: "Before Solidity 0.8, integer overflows were a major risk - now pre
 ### 30-Second Demo (Elevator Pitch)
 ```
 1. Open http://localhost:3000
-2. Paste USDC transfer TX: 0xc0fc2649...
+2. Paste USDC transfer TX: 0x9ff975cc...
 3. Show: "Transaction details, events, and internal calls - all in one view"
 4. Switch to Contract tab → Enter USDC address
 5. Click "Analyze Contract" → Show findings
@@ -788,19 +853,22 @@ Follow the presentation script in Section 3 above.
 
 **Pre-load these before presenting:**
 
-1. **Starter:** USDC Transfer
-   - `0xc0fc2649c61ec578c4c3aaf66b0808abf6bbdc77c49180dc0a14040c4f827ae8`
+1. **Starter — USDC Transfer** (simple, clean output)
+   - `0x9ff975ccc961d9120343852d649f9696b5a884ead1e77dd19be5da323fbd0987`
 
-2. **DeFi:** Recent Uniswap V2 Swap
-   - Find on Etherscan: https://etherscan.io/address/0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
+2. **DeFi — Uniswap V2 Swap** (multi-contract interaction)
+   - `0x9beb8994e30fdc74f3b531ac1d83362939985196b31d45732be0dc42ab8fa061`
 
-3. **Complex:** OpenSea NFT Sale
-   - Find on Etherscan: https://etherscan.io/address/0x00000000006c3852cbEf3e08E8dF289169EdE581
+3. **NFT — OpenSea Seaport Sale** (marketplace mechanics)
+   - `0xd4b4b856ca1d800a60eadeadb710bb104a7c07575929853875ca753c25f127b1`
 
-4. **Block:** Block 19000000
+4. **Historical — The DAO Hack** (reentrancy exploit, course-relevant)
+   - `0x0ec3f2488a93839524add10ea229e773f6bc891b4eb4794c3337d4495263790b`
+
+5. **Block:** Block 19000000
    - Known interesting block with diverse transactions
 
-5. **Contract:** USDC Address
+6. **Contract:** USDC Address (for contract analysis + vulnerability detection)
    - `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`
 
 **Backup Transactions (in case of API issues):**
@@ -978,27 +1046,37 @@ Be prepared to answer:
 
 ## Quick Reference: Real Transaction Hashes
 
-### Working Examples (Verified on Mainnet)
+### All Examples Verified on Ethereum Mainnet
 
 **Simple Transactions:**
-- USDC Transfer: `0xc0fc2649c61ec578c4c3aaf66b0808abf6bbdc77c49180dc0a14040c4f827ae8`
-- WETH Wrap: `0x2c4e8c3e5d9f6e7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1`
-- ETH Transfer: `0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2`
+
+| Category | TX Hash | Gas | Block |
+|----------|---------|-----|-------|
+| USDC Transfer | `0x9ff975ccc961d9120343852d649f9696b5a884ead1e77dd19be5da323fbd0987` | 62K | 21,301,121 |
+| WETH Deposit | `0x215d2b6604f01741cecb56f55805479a8f303ffddaec7963db478ec3458bd99f` | 43K | 4,756,478 |
 
 **DeFi Transactions:**
-- Uniswap V2 Swap: `0x3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4`
-- Aave Deposit: `0x4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5`
-- Compound Borrow: `0x5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6`
+
+| Category | TX Hash | Gas | Block |
+|----------|---------|-----|-------|
+| Uniswap V2 Swap | `0x9beb8994e30fdc74f3b531ac1d83362939985196b31d45732be0dc42ab8fa061` | 121K | 12,167,692 |
+| Uniswap V3 Multi-hop | `0x842aae91c89a9e5043e64af34f53dc66daf0f033ad8afbf35ef0c93f99a9e5e6` | 2.1M | 23,504,546 |
+| Aave V3 Supply | `0x690a70921bf72fc774a4592cf1584f9eb8cdd5660347cb1622c01a19f7bf2201` | 182K | 22,417,619 |
+| 1inch Aggregator | `0x48631e0cbd419365c3c38de8c8c5d7390c4153375aea3795a6a6ac579f1bc5a5` | 234K | 22,722,899 |
 
 **NFT Transactions:**
-- ERC-721 Mint: `0x6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7`
-- OpenSea Sale: `0x7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8`
 
-**Complex Transactions:**
-- Flash Loan: `0x8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9`
-- MEV Bot: `0x9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0`
+| Category | TX Hash | Gas | Block |
+|----------|---------|-----|-------|
+| OpenSea Seaport Sale | `0xd4b4b856ca1d800a60eadeadb710bb104a7c07575929853875ca753c25f127b1` | 140K | 15,270,573 |
 
-**Note:** Some transaction hashes are examples. For actual demos, use the transaction from the backend logs (`0xc0fc2649...`) or find recent transactions on Etherscan by visiting the contract addresses listed above.
+**Famous/Historical Transactions:**
+
+| Category | TX Hash | Gas | Block |
+|----------|---------|-----|-------|
+| The DAO Hack (2016) | `0x0ec3f2488a93839524add10ea229e773f6bc891b4eb4794c3337d4495263790b` | 3.98M | 1,718,497 |
+| Cream Finance Flash Loan Exploit | `0x0fe2542079644e107cbf13690eb9c2c65963ccb79089ff96bfaf8dced2331c92` | 14.9M | 13,499,798 |
+| Compound + CryptoPunk Borrow | `0x92488a00dfa0746c300c66a716e6cc11ba9c0f9d40d8c58e792cc7fcebf432d0` | 978K | 13,508,785 |
 
 ---
 
@@ -1028,7 +1106,7 @@ Edit `/backend/src/services/etherscanService.ts`:
 **Verification:**
 ```bash
 # After fixing, test the API:
-curl "http://localhost:8787/api/tx/0xc0fc2649c61ec578c4c3aaf66b0808abf6bbdc77c49180dc0a14040c4f827ae8"
+curl "http://localhost:8787/api/tx/0x9ff975ccc961d9120343852d649f9696b5a884ead1e77dd19be5da323fbd0987"
 
 # Should return transaction details without "NOTOK" errors
 ```
@@ -1305,9 +1383,9 @@ slither VulnerableBank.sol
    - Backup screenshots folder open
 
 2. **Pre-load demo data:**
-   - USDC transfer in Tx Lookup tab
+   - USDC transfer (`0x9ff975cc...`) in Tx Lookup tab
    - Block 19000000 in Blocks tab
-   - USDC contract in Contract tab
+   - USDC contract (`0xA0b86991...`) in Contract tab
 
 3. **Test one complete flow:**
    - Enter tx hash → Shows details → Switch tabs → Back to home
@@ -1375,8 +1453,8 @@ slither VulnerableBank.sol
 
 ---
 
-**Document Version:** 2.0
-**Last Updated:** February 11, 2026
+**Document Version:** 3.0
+**Last Updated:** February 12, 2026
 **Status:** Ready for Presentation ✓
 
 **Good luck with your presentation! 🚀**

@@ -137,11 +137,41 @@ class TraceService {
         error: trace.error,
       };
     } catch (error: any) {
-      console.error("[TraceService] debug_traceTransaction not available:", error.message);
+      console.error("[TraceService] debug_traceTransaction not available, trying trace_transaction:", error.message);
 
-      // Fallback: Return minimal trace info
-      // In production, you could use Etherscan's internal transaction API here
-      throw new Error("debug_traceTransaction is not available on this RPC endpoint. Please use a provider that supports debug APIs (Alchemy, Infura paid tier, or local node).");
+      // Fallback 1: Try trace_transaction (Parity/OpenEthereum style)
+      try {
+        const traces = await this.provider.send("trace_transaction", [txHash]);
+        const calls = this.parseParityTrace(traces);
+
+        // Get receipt for gas used
+        const receipt = await this.provider.send("eth_getTransactionReceipt", [txHash]);
+
+        return {
+          calls,
+          gasUsed: receipt?.gasUsed || "0",
+          success: receipt?.status === "0x1",
+          returnValue: undefined,
+          error: receipt?.status === "0x1" ? undefined : "Transaction failed",
+        };
+      } catch (traceError: any) {
+        console.error("[TraceService] trace_transaction not available, using Etherscan fallback:", traceError.message);
+
+        // Fallback 2: Use Etherscan internal transactions
+        const internalTxs = await getInternalTxs(txHash);
+        const calls = this.parseEtherscanInternalTxs(internalTxs);
+
+        // Get receipt for gas used
+        const receipt = await this.provider.send("eth_getTransactionReceipt", [txHash]);
+
+        return {
+          calls,
+          gasUsed: receipt?.gasUsed || "0",
+          success: receipt?.status === "0x1",
+          returnValue: undefined,
+          error: receipt?.status === "0x1" ? undefined : "Transaction failed",
+        };
+      }
     }
   }
 
@@ -173,6 +203,79 @@ class TraceService {
     }
 
     calls.push(call);
+    return calls;
+  }
+
+  /**
+   * Parse Parity-style trace_transaction result
+   */
+  private parseParityTrace(traces: any[]): TraceCall[] {
+    const calls: TraceCall[] = [];
+    const callStack: Map<number, TraceCall> = new Map();
+
+    for (const trace of traces) {
+      if (trace.type !== "call" && trace.type !== "create" && trace.type !== "suicide") {
+        continue;
+      }
+
+      const action = trace.action || {};
+      const result = trace.result || {};
+      const depth = (trace.traceAddress?.length || 0);
+
+      const call: TraceCall = {
+        type: trace.type.toUpperCase(),
+        from: action.from || "",
+        to: action.to || action.address || "",
+        value: action.value || "0x0",
+        gas: action.gas || "0x0",
+        gasUsed: result.gasUsed || "0x0",
+        input: action.input || "0x",
+        output: result.output || "0x",
+        error: trace.error || result.error,
+        depth,
+      };
+
+      if (depth === 0) {
+        calls.push(call);
+      } else {
+        // Find parent call and add as nested call
+        const parentDepth = depth - 1;
+        const parent = callStack.get(parentDepth);
+        if (parent) {
+          if (!parent.calls) parent.calls = [];
+          parent.calls.push(call);
+        }
+      }
+
+      callStack.set(depth, call);
+    }
+
+    return calls;
+  }
+
+  /**
+   * Parse Etherscan internal transactions into trace format
+   */
+  private parseEtherscanInternalTxs(internalTxs: any[]): TraceCall[] {
+    const calls: TraceCall[] = [];
+
+    for (const tx of internalTxs) {
+      const call: TraceCall = {
+        type: tx.type?.toUpperCase() || "CALL",
+        from: tx.from || "",
+        to: tx.to || "",
+        value: tx.value ? `0x${parseInt(tx.value).toString(16)}` : "0x0",
+        gas: tx.gas ? `0x${parseInt(tx.gas).toString(16)}` : "0x0",
+        gasUsed: tx.gasUsed ? `0x${parseInt(tx.gasUsed).toString(16)}` : "0x0",
+        input: tx.input || "0x",
+        output: tx.output || "0x",
+        error: tx.isError === "1" ? tx.errCode : undefined,
+        depth: 0, // Etherscan doesn't provide depth info
+      };
+
+      calls.push(call);
+    }
+
     return calls;
   }
 
@@ -447,6 +550,27 @@ class TraceService {
    */
   async getGasProfile(txHash: string): Promise<GasProfile> {
     try {
+      // Get transaction to find contract address
+      const tx = await this.provider.send("eth_getTransactionByHash", [txHash]);
+      const contractAddress = tx?.to;
+
+      // Try to get ABI for function name resolution
+      let abiInterface: ethers.Interface | null = null;
+      if (contractAddress) {
+        try {
+          const { getContractSource } = await import("./etherscanService");
+          const sourceData = await getContractSource(contractAddress);
+          if (sourceData && sourceData[0]?.ABI && sourceData[0].ABI !== "Contract source code not verified") {
+            abiInterface = new ethers.Interface(sourceData[0].ABI);
+            console.log("[TraceService] Successfully loaded ABI for contract:", contractAddress);
+          } else {
+            console.log("[TraceService] Contract not verified or no ABI:", contractAddress);
+          }
+        } catch (abiError: any) {
+          console.log("[TraceService] Could not fetch ABI for function names:", abiError.message);
+        }
+      }
+
       // Get opcode-level trace
       const trace = await this.provider.send("debug_traceTransaction", [
         txHash,
@@ -460,7 +584,7 @@ class TraceService {
       const opcodeStats = this.analyzeOpcodes(trace.structLogs || []);
 
       // Analyze function calls
-      const functionBreakdown = this.analyzeFunctionCalls(callTrace.calls);
+      const functionBreakdown = this.analyzeFunctionCalls(callTrace.calls, abiInterface);
 
       // Generate optimization suggestions
       const suggestions = this.generateOptimizationSuggestions(opcodeStats, functionBreakdown, trace.structLogs || []);
@@ -476,8 +600,29 @@ class TraceService {
 
       // Fallback: try to get basic function breakdown from call trace only
       try {
+        // Get transaction to find contract address
+        const tx = await this.provider.send("eth_getTransactionByHash", [txHash]);
+        const contractAddress = tx?.to;
+
+        // Try to get ABI for function name resolution
+        let abiInterface: ethers.Interface | null = null;
+        if (contractAddress) {
+          try {
+            const { getContractSource } = await import("./etherscanService");
+            const sourceData = await getContractSource(contractAddress);
+            if (sourceData && sourceData[0]?.ABI && sourceData[0].ABI !== "Contract source code not verified") {
+              abiInterface = new ethers.Interface(sourceData[0].ABI);
+              console.log("[TraceService] [Fallback] Successfully loaded ABI for contract:", contractAddress);
+            } else {
+              console.log("[TraceService] [Fallback] Contract not verified or no ABI:", contractAddress);
+            }
+          } catch (abiError: any) {
+            console.log("[TraceService] [Fallback] Could not fetch ABI for function names:", abiError.message);
+          }
+        }
+
         const callTrace = await this.getTransactionTrace(txHash);
-        const functionBreakdown = this.analyzeFunctionCalls(callTrace.calls);
+        const functionBreakdown = this.analyzeFunctionCalls(callTrace.calls, abiInterface);
 
         return {
           totalGas: parseInt(callTrace.gasUsed || "0", 16),
@@ -529,7 +674,7 @@ class TraceService {
   /**
    * Analyze function calls for gas breakdown
    */
-  private analyzeFunctionCalls(calls: TraceCall[]): FunctionGasUsage[] {
+  private analyzeFunctionCalls(calls: TraceCall[], abiInterface?: ethers.Interface | null): FunctionGasUsage[] {
     const functionMap = new Map<string, { gasUsed: number; count: number }>();
 
     const processCalls = (calls: TraceCall[]) => {
@@ -554,11 +699,26 @@ class TraceService {
 
     processCalls(calls);
 
-    // Convert to array
+    // Convert to array and resolve function names
     const functionBreakdown: FunctionGasUsage[] = [];
     for (const [selector, stats] of functionMap.entries()) {
+      let functionName: string | undefined;
+
+      // Try to resolve function name from ABI
+      if (abiInterface && selector && selector.length >= 10) {
+        try {
+          const fragment = abiInterface.getFunction(selector);
+          if (fragment) {
+            functionName = fragment.name;
+          }
+        } catch (e) {
+          // Selector not in ABI, keep it as undefined
+        }
+      }
+
       functionBreakdown.push({
         selector,
+        functionName,
         gasUsed: stats.gasUsed,
         callCount: stats.count,
         avgGas: stats.count > 0 ? stats.gasUsed / stats.count : 0,

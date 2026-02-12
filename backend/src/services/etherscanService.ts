@@ -27,6 +27,9 @@ async function etherscanFetch(params: Record<string, string>): Promise<any> {
     throw new Error(json.message);
   }
   if (json.status === "0" && json.message && json.message !== "No transactions found") {
+    // Log the URL for debugging (without the API key)
+    const debugUrl = url.toString().replace(/apikey=[^&]+/, 'apikey=***');
+    console.error(`[EtherscanService] API error: ${json.message} (URL: ${debugUrl})`);
     throw new Error(json.message);
   }
 

@@ -185,7 +185,12 @@ export default function ContractGasAnalysis({ contractAddress }: ContractGasAnal
                     return (
                       <div key={idx} className="border rounded-md p-3">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-mono text-xs">{func.selector}</span>
+                          <div className="flex flex-col gap-1">
+                            <span className="font-semibold text-sm">
+                              {func.functionName || "Unknown Function"}
+                            </span>
+                            <span className="font-mono text-xs text-muted-foreground">{func.selector}</span>
+                          </div>
                           <div className="flex items-center gap-2">
                             <Badge className="text-xs">{func.callCount} calls</Badge>
                             <Badge className="text-xs bg-blue-100 text-blue-800">
@@ -203,10 +208,10 @@ export default function ContractGasAnalysis({ contractAddress }: ContractGasAnal
                             <span className="font-mono">{Math.round(func.avgGas).toLocaleString()}</span>
                           </div>
                         </div>
-                        <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                           <div
                             className="bg-blue-500 h-2 rounded-full transition-all"
-                            style={{ width: `${percentage}%` }}
+                            style={{ width: `${Math.min(100, parseFloat(percentage))}%` }}
                           />
                         </div>
                       </div>

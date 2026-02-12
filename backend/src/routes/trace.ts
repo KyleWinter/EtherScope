@@ -107,11 +107,11 @@ export function registerTraceRoutes(router: Router) {
       if (receipt.to) {
         try {
           const contractSource = await getContractSource(receipt.to);
-          if (contractSource?.ABI && contractSource.ABI !== "Contract source code not verified") {
-            abi = JSON.parse(contractSource.ABI);
+          if (contractSource && contractSource[0]?.ABI && contractSource[0].ABI !== "Contract source code not verified") {
+            abi = JSON.parse(contractSource[0].ABI);
           }
-        } catch (e) {
-          console.log("[TraceRoute] Could not get ABI for contract:", receipt.to);
+        } catch (e: any) {
+          console.log("[TraceRoute] Could not get ABI for contract:", receipt.to, e.message);
         }
       }
 
