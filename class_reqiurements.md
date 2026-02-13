@@ -36,8 +36,6 @@ In the Development Project, you are expected to design, architect, and develop a
 
 ### Project Options
 
-*(Options 1-6 have been removed as requested)*
-
 Option 7: EVM Transaction Debugger & Analyzer 
 
 **Project in a Nutshell**
@@ -123,8 +121,6 @@ Developers need tools that can:
 * Foundry/Hardhat debugging tools 
 
 
-
-*(Option 8 has been removed as requested)*
 
 ---
 
