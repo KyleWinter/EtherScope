@@ -102,7 +102,7 @@ MetaMask integration:
 
 ```bash
 # 1. Clone the repository
-git clone <your-repository-url>
+git clone https://github.com/KyleWinter/EtherScope.git
 cd EtherScope
 
 # 2. Start the application
@@ -148,7 +148,7 @@ pnpm --version
 
 ```bash
 # Clone repository
-git clone <your-repository-url>
+git clone https://github.com/KyleWinter/EtherScope.git
 cd EtherScope
 
 # Install all workspace dependencies

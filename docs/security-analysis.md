@@ -533,22 +533,6 @@ await window.ethereum.request({
 
 ---
 
-## Responsible Disclosure
-
-If you discover a security vulnerability in EtherScope:
-
-1. **Do NOT** open a public GitHub issue
-2. Email security details to: [your-security-email@example.com]
-3. Include:
-   - Description of the vulnerability
-   - Steps to reproduce
-   - Potential impact assessment
-   - Suggested fix (optional)
-
-**Response Time**: We aim to acknowledge within 24 hours and provide initial assessment within 72 hours.
-
----
-
 ## References
 
 - [Smart Contract Weakness Classification (SWC)](https://swcregistry.io/)

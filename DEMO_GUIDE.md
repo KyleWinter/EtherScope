@@ -33,7 +33,7 @@ EtherScope is an advanced EVM Transaction Debugger & Analyzer that helps develop
 
 ```bash
 # 1. Clone and start
-git clone https://github.com/yourusername/EtherScope.git
+git clone https://github.com/KyleWinter/EtherScope.git
 cd EtherScope
 
 # 2. Configure backend
