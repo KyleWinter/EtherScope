@@ -2,7 +2,7 @@
 
 ## Development Project Documentation
 
-**Academic Year:** 2025-26 | **Trimester:** 1
+**Academic Year:** 2025-26 | **Trimester:** 2
 
 General Information 
 
